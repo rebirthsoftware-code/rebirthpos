@@ -1,0 +1,26 @@
+node_modules
+dist
+.nuxt
+.output
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+.vscode
+.idea
+coverage
+.cache
+
+# SQLite veritabanı — gerçek satış/ödeme verisi, repoya gitmemeli
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Electron build çıktıları
+apps/desktop/dist
+release
+
+# Vercel
+.vercel

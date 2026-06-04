@@ -1,0 +1,488 @@
+// Rebirth POS — Veritabanı Şeması
+// Multi-tenant: her satırda sube_id → row-level izolasyon
+// Geliştirme: SQLite | Üretim: PostgreSQL'e geçilecek
+//
+// Not: SQLite enum desteklemediği için tüm enum alanlar String.
+// Olası değerler src/common/enums.ts dosyasında sabit olarak tanımlı.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// FİRMA / ŞUBE (Tenant kökü)
+// ─────────────────────────────────────────────────────────────
+
+model Firma {
+  id           String   @id @default(cuid())
+  ad           String
+  vergiNo      String?
+  vergiDairesi String?
+  logoUrl      String?
+  paraBirimi   String   @default("TRY")
+  kdvOrani     Decimal  @default(10.00)
+  olusturuldu  DateTime @default(now())
+  guncellendi  DateTime @updatedAt
+
+  subeler Sube[]
+
+  @@map("firmalar")
+}
+
+model Sube {
+  id          String   @id @default(cuid())
+  firmaId     String
+  ad          String
+  adres       String?
+  telefon     String?
+  email       String?
+  aktif       Boolean  @default(true)
+  olusturuldu DateTime @default(now())
+  guncellendi DateTime @updatedAt
+
+  firma        Firma           @relation(fields: [firmaId], references: [id], onDelete: Cascade)
+  kullanicilar SubeKullanici[]
+  katlar       Kat[]
+  masalar      Masa[]
+  kategoriler  Kategori[]
+  urunler      Urun[]
+  adisyonlar   Adisyon[]
+  siparisler   Siparis[]
+  odemeler     Odeme[]
+  musteriler   Musteri[]
+  denetimKayitlari Denetim[]
+  eBelgeler    EBelge[]
+
+  @@index([firmaId])
+  @@map("subeler")
+}
+
+// ─────────────────────────────────────────────────────────────
+// KULLANICILAR & ROLLER
+// rol: SUPER_ADMIN | FIRMA_ADMIN | SUBE_MUDURU | KASIYER | GARSON | MUTFAK | KURYE
+// ─────────────────────────────────────────────────────────────
+
+model Kullanici {
+  id          String    @id @default(cuid())
+  eposta      String    @unique
+  sifreHash   String
+  adSoyad     String
+  telefon     String?
+  rol         String
+  aktif       Boolean   @default(true)
+  sonGiris    DateTime?
+  olusturuldu DateTime  @default(now())
+  guncellendi DateTime  @updatedAt
+
+  subeler           SubeKullanici[]
+  adisyonlar        Adisyon[]       @relation("AdisyonAcanKullanici")
+  kuryeAdisyonlar   Adisyon[]       @relation("AdisyonKurye")
+  siparisler        Siparis[]
+  odemeler          Odeme[]
+  refreshTokens     RefreshToken[]
+  stokHareketleri   StokHareketi[]
+  denetimKayitlari  Denetim[]
+  eBelgeler         EBelge[]
+
+  @@map("kullanicilar")
+}
+
+model SubeKullanici {
+  id          String   @id @default(cuid())
+  kullaniciId String
+  subeId      String
+  olusturuldu DateTime @default(now())
+
+  kullanici Kullanici @relation(fields: [kullaniciId], references: [id], onDelete: Cascade)
+  sube      Sube      @relation(fields: [subeId], references: [id], onDelete: Cascade)
+
+  @@unique([kullaniciId, subeId])
+  @@map("sube_kullanicilar")
+}
+
+// Refresh token: DB'ye plaintext değil SHA-256 hash kaydedilir.
+// DB sızıntısı durumunda token'lar doğrudan kullanılamaz.
+// Rotation: her refresh'te eski kayıt iptal edilir, yenisi yaratılır.
+model RefreshToken {
+  id          String   @id @default(cuid())
+  kullaniciId String
+  tokenHash   String   @unique
+  expiresAt   DateTime
+  iptal       Boolean  @default(false)
+  olusturuldu DateTime @default(now())
+
+  kullanici Kullanici @relation(fields: [kullaniciId], references: [id], onDelete: Cascade)
+
+  @@index([kullaniciId, iptal])
+  @@map("refresh_tokens")
+}
+
+// ─────────────────────────────────────────────────────────────
+// MASA DÜZENİ
+// masa.durum: BOS | DOLU | REZERVE | ODEME_BEKLIYOR
+// ─────────────────────────────────────────────────────────────
+
+model Kat {
+  id     String @id @default(cuid())
+  subeId String
+  ad     String
+  sira   Int    @default(0)
+
+  sube    Sube   @relation(fields: [subeId], references: [id], onDelete: Cascade)
+  masalar Masa[]
+
+  @@index([subeId])
+  @@map("katlar")
+}
+
+model Masa {
+  id        String  @id @default(cuid())
+  subeId    String
+  katId     String?
+  ad        String
+  kapasite  Int     @default(4)
+  durum     String  @default("BOS")
+  pozisyonX Float?
+  pozisyonY Float?
+  qrKod     String? @unique
+
+  sube       Sube      @relation(fields: [subeId], references: [id], onDelete: Cascade)
+  kat        Kat?      @relation(fields: [katId], references: [id], onDelete: SetNull)
+  adisyonlar Adisyon[]
+
+  @@index([subeId])
+  @@index([katId])
+  @@map("masalar")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ÜRÜNLER
+// ─────────────────────────────────────────────────────────────
+
+model Kategori {
+  id     String  @id @default(cuid())
+  subeId String
+  ad     String
+  sira   Int     @default(0)
+  renk   String?
+  ikon   String?
+  aktif  Boolean @default(true)
+
+  sube    Sube   @relation(fields: [subeId], references: [id], onDelete: Cascade)
+  urunler Urun[]
+
+  @@index([subeId])
+  @@map("kategoriler")
+}
+
+model Urun {
+  id             String   @id @default(cuid())
+  subeId         String
+  kategoriId     String?
+  ad             String
+  aciklama       String?
+  fiyat          Decimal
+  kdvOrani       Decimal  @default(10.00)
+  resimUrl       String?
+  barkod         String?
+  stokTakibi     Boolean  @default(false)
+  stok           Decimal  @default(0)
+  stokBirim      String   @default("adet")
+  stokUyariEsigi Decimal  @default(0)
+  aktif          Boolean  @default(true)
+  qrMenudeGoster Boolean  @default(true)
+  olusturuldu    DateTime @default(now())
+  guncellendi    DateTime @updatedAt
+
+  sube             Sube           @relation(fields: [subeId], references: [id], onDelete: Cascade)
+  kategori         Kategori?      @relation(fields: [kategoriId], references: [id], onDelete: SetNull)
+  siparisKalemleri SiparisKalem[]
+  stokHareketleri  StokHareketi[]
+
+  @@index([subeId])
+  @@index([kategoriId])
+  @@map("urunler")
+}
+
+// stok hareket tipleri: GIRIS | CIKIS | SATIS | IADE | DUZELTME | FIRE
+model StokHareketi {
+  id          String   @id @default(cuid())
+  subeId      String
+  urunId      String
+  tip         String
+  miktar      Decimal
+  oncesi      Decimal
+  sonrasi     Decimal
+  aciklama    String?
+  kullaniciId String?
+  olusturuldu DateTime @default(now())
+
+  urun      Urun       @relation(fields: [urunId], references: [id], onDelete: Cascade)
+  kullanici Kullanici? @relation(fields: [kullaniciId], references: [id], onDelete: SetNull)
+
+  @@index([subeId])
+  @@index([urunId, olusturuldu])
+  @@map("stok_hareketleri")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ADİSYON & SİPARİŞ
+// adisyon.durum: ACIK | ODEME_BEKLIYOR | KAPALI | IPTAL
+// siparis.durum: ALINDI | HAZIRLANIYOR | HAZIR | TESLIM_EDILDI | IPTAL
+// ─────────────────────────────────────────────────────────────
+
+// Adisyon tipleri: MASA | PAKET | GEL_AL
+// Paket için: musteriId, adres, kuryeId doldurulur, masaId boş kalır
+model Adisyon {
+  id              String    @id @default(cuid())
+  subeId          String
+  masaId          String?
+  acanKullaniciId String
+  musteriId       String?
+  kuryeId         String?
+  numara          String
+  tip             String    @default("MASA")
+  durum           String    @default("ACIK")
+  araToplam       Decimal   @default(0)
+  iskontoTutar    Decimal   @default(0)
+  kdvTutar        Decimal   @default(0)
+  // KDV oranı bazında matrah/KDV dökümü (JSON). ÖKC fişinde KDV1/KDV2/KDV3
+  // bandları için kullanılır. Şekil: [{ oran: 10, matrah: 90.91, kdv: 9.09 }, ...]
+  kdvDokumu       String?
+  toplamTutar     Decimal   @default(0)
+  // ÖKC mali fişi: bir adisyon için bir fiş. okcFisNo doluysa fiş kesilmiş demek.
+  okcFisNo        String?
+  okcFisTarihi    DateTime?
+  okcMarka        String?   // BEKO | INGENICO | MOCK
+  paketAdres      String?
+  paketDurum      String?   // BEKLIYOR | HAZIRLANIYOR | YOLDA | TESLIM_EDILDI
+  not             String?
+  acilis          DateTime  @default(now())
+  kapanis         DateTime?
+
+  sube          Sube       @relation(fields: [subeId], references: [id], onDelete: Cascade)
+  masa          Masa?      @relation(fields: [masaId], references: [id], onDelete: SetNull)
+  acanKullanici Kullanici  @relation("AdisyonAcanKullanici", fields: [acanKullaniciId], references: [id])
+  kurye         Kullanici? @relation("AdisyonKurye", fields: [kuryeId], references: [id], onDelete: SetNull)
+  musteri       Musteri?   @relation(fields: [musteriId], references: [id], onDelete: SetNull)
+  siparisler    Siparis[]
+  odemeler      Odeme[]
+  eBelgeler     EBelge[]
+
+  @@unique([subeId, okcFisNo])
+  @@index([subeId, durum])
+  @@index([masaId])
+  @@index([kuryeId])
+  @@index([musteriId])
+  @@map("adisyonlar")
+}
+
+model Siparis {
+  id          String   @id @default(cuid())
+  subeId      String
+  adisyonId   String
+  kullaniciId String
+  durum       String   @default("ALINDI")
+  kaynak      String   @default("PANEL")
+  not         String?
+  olusturuldu DateTime @default(now())
+  guncellendi DateTime @updatedAt
+
+  sube      Sube           @relation(fields: [subeId], references: [id], onDelete: Cascade)
+  adisyon   Adisyon        @relation(fields: [adisyonId], references: [id], onDelete: Cascade)
+  kullanici Kullanici      @relation(fields: [kullaniciId], references: [id])
+  kalemler  SiparisKalem[]
+
+  @@index([subeId, durum])
+  @@index([adisyonId])
+  @@map("siparisler")
+}
+
+model SiparisKalem {
+  id         String  @id @default(cuid())
+  siparisId  String
+  urunId     String
+  adet       Int     @default(1)
+  birimFiyat Decimal
+  toplam     Decimal
+  not        String?
+  iptal      Boolean @default(false)
+  // URUN_SEC modunda kaç adedi ödendi. adet - odenenAdet = ödenmeyen kalan.
+  // adet'i geçemez (backend kontrol eder). Split-bill için kullanılır.
+  odenenAdet Int     @default(0)
+
+  siparis Siparis @relation(fields: [siparisId], references: [id], onDelete: Cascade)
+  urun    Urun    @relation(fields: [urunId], references: [id])
+
+  @@index([siparisId])
+  @@map("siparis_kalemleri")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ÖDEME
+// odeme.tip: NAKIT | KREDI_KARTI | BANKA_KARTI | HAVALE | YEMEKSEPETI | TICKET | DIGER
+// ─────────────────────────────────────────────────────────────
+
+model Odeme {
+  id             String   @id @default(cuid())
+  subeId         String
+  adisyonId      String
+  kullaniciId    String
+  tip            String
+  tutar          Decimal
+  bahsis         Decimal  @default(0)
+  iptal          Boolean  @default(false)
+  okcFisNo       String?
+  // POS kart cihazı yanıtı (JSON):
+  // { slipNo, rrn, banka, sonRakam, onayKod, terminalMarka }
+  // Sadece KREDI_KARTI tipinde dolar; nakit/ticket için null.
+  kartMeta       String?
+  // URUN_SEC modunda ödeme JSON snapshot: [{ kalemId, adet }]
+  // Ödeme iptalinde kalem.odenenAdet'i geri çekmek için kullanılır.
+  odenenKalemler String?
+  idempotencyKey String?
+  olusturuldu    DateTime @default(now())
+
+  sube      Sube      @relation(fields: [subeId], references: [id], onDelete: Cascade)
+  adisyon   Adisyon   @relation(fields: [adisyonId], references: [id], onDelete: Cascade)
+  kullanici Kullanici @relation(fields: [kullaniciId], references: [id])
+
+  @@unique([adisyonId, idempotencyKey])
+  @@index([subeId, olusturuldu])
+  @@index([adisyonId])
+  @@map("odemeler")
+}
+
+// ─────────────────────────────────────────────────────────────
+// MÜŞTERİ (paket servis için)
+// ─────────────────────────────────────────────────────────────
+
+model Musteri {
+  id          String   @id @default(cuid())
+  subeId      String
+  adSoyad     String
+  telefon     String
+  email       String?
+  adres       String?
+  notlar      String?
+  // ── Fatura kimlik bilgileri (e-Arşiv / e-Fatura için) ──
+  // VKN (10 hane, tüzel kişi) veya TCKN (11 hane, bireysel)
+  vergiNo     String?
+  vergiDairesi String?
+  olusturuldu DateTime @default(now())
+  guncellendi DateTime @updatedAt
+
+  sube       Sube      @relation(fields: [subeId], references: [id], onDelete: Cascade)
+  adisyonlar Adisyon[]
+  eBelgeler  EBelge[]
+
+  @@unique([subeId, telefon])
+  @@index([subeId])
+  @@map("musteriler")
+}
+
+// ─────────────────────────────────────────────────────────────
+// E-BELGE (e-Arşiv Fatura, e-Fatura, e-SMM)
+// 593 No.lu VUK Tebliği gereği ÖKC entegre yazılımı e-Belge düzenleyebilir.
+//
+// tip: E_ARSIV (B2C, e-Fatura mükellefi olmayan müşteri için)
+//      E_FATURA (B2B, tüzel kişiler arası — KEP ile gönderilir)
+//      E_SMM (Serbest Meslek Makbuzu)
+// durum: TASLAK | GONDERILDI | ONAYLANDI | REDDEDILDI | IPTAL
+// ─────────────────────────────────────────────────────────────
+
+model EBelge {
+  id          String   @id @default(cuid())
+  subeId      String
+  adisyonId   String?
+  musteriId   String?
+  kullaniciId String
+
+  tip   String  // E_ARSIV | E_FATURA | E_SMM
+  durum String  @default("TASLAK")
+
+  // GİB Evrensel Tekil Tanımlama Numarası — 32 hex char (UUID v4 standardı)
+  ettn      String  @unique
+  // Belge numarası (örn. ER2026000000001)
+  belgeNo   String  @unique
+  marka     String  @default("MOCK")  // MOCK | LOGO | EFINANS | UYUMSOFT | FORIBA
+
+  // ── Alıcı snapshot (müşteri sonradan değişse bile fatura bozulmasın) ──
+  aliciAd           String
+  aliciVergiNo      String?  // VKN(10) veya TCKN(11)
+  aliciVergiDairesi String?
+  aliciAdres        String?
+  aliciEposta       String?
+  aliciTelefon      String?
+
+  // ── Mali ──
+  araToplam   Decimal
+  iskontoTutar Decimal @default(0)
+  kdvTutar    Decimal
+  toplamTutar Decimal
+  // KDV bandı dökümü JSON: [{ oran, matrah, kdv }, ...]
+  kdvDokumu   String?
+  // Belge kalemleri snapshot JSON
+  kalemler    String?
+  // Ödeme dağılımı snapshot JSON
+  odemeler    String?
+  // Belge üzerine yazılan not
+  not         String?
+  // Entegratör ham yanıtı (debug + denetim)
+  ekMeta      String?
+
+  // PDF/HTML çıktı dosyası url (ileride dosya sunucusunda)
+  pdfUrl     String?
+
+  duzenlenmeTarihi DateTime  @default(now())
+  gonderilmeTarihi DateTime?
+  onaylanmaTarihi  DateTime?
+  iptalTarihi      DateTime?
+
+  sube      Sube      @relation(fields: [subeId], references: [id], onDelete: Cascade)
+  adisyon   Adisyon?  @relation(fields: [adisyonId], references: [id], onDelete: SetNull)
+  musteri   Musteri?  @relation(fields: [musteriId], references: [id], onDelete: SetNull)
+  kullanici Kullanici @relation(fields: [kullaniciId], references: [id])
+
+  @@index([subeId, duzenlenmeTarihi])
+  @@index([adisyonId])
+  @@index([musteriId])
+  @@map("e_belgeler")
+}
+
+// ─────────────────────────────────────────────────────────────
+// DENETİM (AUDIT LOG)
+// ÖKC denetimi ve içsel kontrol için kritik olayların izi:
+// ödeme, adisyon iptali, iskonto, ürün fiyat değişimi, kullanıcı/rol değişimi,
+// stok manuel düzeltmesi. ana işlemle aynı transaction içinde yazılır.
+//
+// islem değerleri src/denetim/denetim.olay.ts içinde sabit.
+// onceki/sonraki: ilgili kayıt değişti ise eski/yeni JSON snapshot.
+// ─────────────────────────────────────────────────────────────
+
+model Denetim {
+  id          String   @id @default(cuid())
+  subeId      String?
+  kullaniciId String?
+  islem       String
+  entityTipi  String
+  entityId    String?
+  ozet        String?
+  onceki      String?
+  sonraki     String?
+  ip          String?
+  olusturuldu DateTime @default(now())
+
+  sube      Sube?      @relation(fields: [subeId], references: [id], onDelete: SetNull)
+  kullanici Kullanici? @relation(fields: [kullaniciId], references: [id], onDelete: SetNull)
+
+  @@index([subeId, olusturuldu])
+  @@index([entityTipi, entityId])
+  @@index([islem, olusturuldu])
+  @@map("denetim_kayitlari")
+}

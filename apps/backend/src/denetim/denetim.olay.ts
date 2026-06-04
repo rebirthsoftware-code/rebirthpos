@@ -1,0 +1,65 @@
+// Audit log olay sabitleri.
+// Yeni event eklerken: hem buraya hem ilgili servise eklenmeli.
+// Frontend filtre dropdown'ı da bu listeyi kullanabilir.
+
+export const DenetimOlay = {
+  // Güvenlik
+  LOGIN_BASARISIZ: 'LOGIN_BASARISIZ',
+  // Ödeme
+  ODEME_OLUSTUR: 'ODEME_OLUSTUR',
+  ODEME_IPTAL: 'ODEME_IPTAL',
+  // Adisyon
+  ADISYON_IPTAL: 'ADISYON_IPTAL',
+  ADISYON_ISKONTO: 'ADISYON_ISKONTO',
+  // Sipariş
+  SIPARIS_KALEM_IPTAL: 'SIPARIS_KALEM_IPTAL',
+  // Ürün
+  URUN_FIYAT_DEGISTI: 'URUN_FIYAT_DEGISTI',
+  URUN_KDV_DEGISTI: 'URUN_KDV_DEGISTI',
+  URUN_SIL: 'URUN_SIL',
+  // Stok
+  STOK_DUZELTME: 'STOK_DUZELTME',
+  // Kullanıcı
+  KULLANICI_OLUSTUR: 'KULLANICI_OLUSTUR',
+  KULLANICI_ROL_DEGISTI: 'KULLANICI_ROL_DEGISTI',
+  KULLANICI_PASIFLESTIR: 'KULLANICI_PASIFLESTIR',
+  // Müşteri (paket servis için kritik — telefon + adres)
+  MUSTERI_OLUSTUR: 'MUSTERI_OLUSTUR',
+  MUSTERI_GUNCELLE: 'MUSTERI_GUNCELLE',
+  MUSTERI_SIL: 'MUSTERI_SIL',
+  // Paket teslim akışı (kurye atama, durum geçişleri)
+  PAKET_OLUSTUR: 'PAKET_OLUSTUR',
+  PAKET_KURYE_ATA: 'PAKET_KURYE_ATA',
+  PAKET_DURUM_DEGISTI: 'PAKET_DURUM_DEGISTI',
+  // Kategori
+  KATEGORI_OLUSTUR: 'KATEGORI_OLUSTUR',
+  KATEGORI_GUNCELLE: 'KATEGORI_GUNCELLE',
+  KATEGORI_SIL: 'KATEGORI_SIL',
+  // Kat
+  KAT_OLUSTUR: 'KAT_OLUSTUR',
+  KAT_GUNCELLE: 'KAT_GUNCELLE',
+  KAT_SIL: 'KAT_SIL',
+  // Masa
+  MASA_OLUSTUR: 'MASA_OLUSTUR',
+  MASA_GUNCELLE: 'MASA_GUNCELLE',
+  MASA_SIL: 'MASA_SIL',
+  // Firma (tenant kökü)
+  FIRMA_OLUSTUR: 'FIRMA_OLUSTUR',
+  FIRMA_GUNCELLE: 'FIRMA_GUNCELLE',
+  FIRMA_SIL: 'FIRMA_SIL',
+  // Şube
+  SUBE_OLUSTUR: 'SUBE_OLUSTUR',
+  SUBE_GUNCELLE: 'SUBE_GUNCELLE',
+  SUBE_SIL: 'SUBE_SIL',
+  // ÖKC (yasal)
+  OKC_FIS_KESILDI: 'OKC_FIS_KESILDI',
+  OKC_IADE: 'OKC_IADE',
+  OKC_Z_RAPORU: 'OKC_Z_RAPORU',
+  OKC_X_RAPORU: 'OKC_X_RAPORU',
+  // e-Belge (593 No.lu VUK — GİB entegratörü ile)
+  E_ARSIV_DUZENLENDI: 'E_ARSIV_DUZENLENDI',
+  E_FATURA_DUZENLENDI: 'E_FATURA_DUZENLENDI',
+  E_SMM_DUZENLENDI: 'E_SMM_DUZENLENDI',
+  E_BELGE_IPTAL: 'E_BELGE_IPTAL',
+} as const;
+export type DenetimOlay = (typeof DenetimOlay)[keyof typeof DenetimOlay];

@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node /c/xampp/htdocs/rebirth-pos/__hardening-test.js)",
+      "Bash(curl -sv \"http://localhost:3001/socket.io/?EIO=4&transport=polling\")",
+      "Bash(curl -s \"http://localhost:3001/api/socket.io/?EIO=4&transport=polling\")",
+      "Bash(npm --workspace apps/backend run build)",
+      "PowerShell($c = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue; if\\($c\\){ Stop-Process -Id $c.OwningProcess -Force; \"killed\"; Start-Sleep -Milliseconds 500 } else { \"free\" })",
+      "Bash(node dist/src/main.js)",
+      "Bash(curl -s \"http://localhost:3001/socket.io/?EIO=4&transport=polling\")",
+      "PowerShell($c = Get-NetTCPConnection -LocalPort 3001 -State Listen -ErrorAction SilentlyContinue; if\\($c\\){ foreach\\($x in $c\\){ Stop-Process -Id $x.OwningProcess -Force; \"killed $\\($x.OwningProcess\\)\" } } else { \"free\" })",
+      "Bash(npm install *)",
+      "Bash(ls \"C:\\\\Users\\\\ozgur\\\\.claude\\\\graphify-out\\\\\" 2>&1 | head -5)"
+    ]
+  }
+}

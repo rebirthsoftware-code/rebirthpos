@@ -1,0 +1,556 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─────────────────────────────────────────────────────
+   REBIRTH POS — Light · Gold · White design system
+   v3 — açık tema (gri/beyaz/altın)
+   ───────────────────────────────────────────────────── */
+
+@layer base {
+  html, body, #__nuxt {
+    @apply h-full bg-ink-100 font-sans antialiased;
+    /* Açık zemin — ince altın dokunuşlu mesh */
+    background:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(200,154,42,0.10), transparent 60%),
+      radial-gradient(ellipse 60% 40% at 100% 120%, rgba(200,154,42,0.06), transparent 50%),
+      radial-gradient(ellipse 40% 30% at 0% 50%, rgba(200,154,42,0.04), transparent 50%),
+      #f6f6f8;
+    background-attachment: fixed;
+    /* Tüm metin için DEFAULT renk: koyu antrasit. Bileşenler özel renkler
+       kullanmadığı sürece her zaman okunaklı kalır. */
+    color: #1c1c20;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    color: #1c1c20;
+  }
+
+  /* Başlık tipografisi — daima koyu */
+  h1, h2, h3, h4, h5, h6 {
+    @apply tracking-tight;
+    color: #1c1c20;
+  }
+
+  /* Genel paragraf / span / div default — koyu */
+  p, span:not([class*="text-"]):not([class*="gold"]) {
+    color: inherit;
+  }
+
+  /* input/textarea/select varsayılan metin koyu (Tailwind preflight'ı pekiştir) */
+  input, textarea, select {
+    color: #1c1c20;
+  }
+  input::placeholder, textarea::placeholder {
+    color: rgba(28,28,32,0.45);
+  }
+
+  /* Seçim rengi */
+  ::selection {
+    background: rgba(200,154,42,0.30);
+    color: #1c1c20;
+  }
+
+  /* Kaydırma çubuğu — ince altın */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(200,154,42,0.25);
+    border-radius: 3px;
+    transition: background 0.2s;
+  }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(200,154,42,0.5); }
+
+  /* Numara girişlerinde spinner gizle */
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type=number] { -moz-appearance: textfield; }
+
+  /* Yatay scroll çubuğu */
+  .scrollbar-thin::-webkit-scrollbar { height: 3px; }
+}
+
+@layer components {
+  /* ── Yüzeyler ── */
+  /* glass-card: tüm kartların temel sınıfı (light tema: beyaz translucent) */
+  .glass-card {
+    @apply bg-white/75 border border-pearl-10 rounded-2xl;
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    box-shadow:
+      0 4px 24px -8px rgba(28,28,32,0.10),
+      inset 0 1px 0 rgba(255,255,255,0.7);
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  }
+
+  .surface-elevated {
+    @apply bg-white border border-pearl-10 rounded-2xl;
+    box-shadow:
+      0 16px 40px -14px rgba(28,28,32,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.7);
+  }
+
+  /* Lüks kart — hover'da altın iç ışık */
+  .card-luxe {
+    @apply glass-card relative overflow-hidden;
+  }
+  .card-luxe::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(200,154,42,0.10), transparent 55%);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+  .card-luxe:hover {
+    @apply border-gold-primary/30;
+    box-shadow:
+      0 12px 40px -10px rgba(28,28,32,0.18),
+      0 0 0 1px rgba(200,154,42,0.18),
+      inset 0 1px 0 rgba(230,196,82,0.20);
+    transform: translateY(-2px);
+  }
+  .card-luxe:hover::before { opacity: 1; }
+
+  /* Altın metin */
+  .gold-text {
+    background: linear-gradient(135deg, #d8b04a 0%, #c89a2a 50%, #7a5f18 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.01em;
+  }
+
+  /* Altın parıltılı (sweep animasyonu) metin — büyük rakamlar için */
+  .gold-text-shimmer {
+    background: linear-gradient(105deg, #7a5f18 25%, #e6c452 45%, #c89a2a 55%, #7a5f18 75%);
+    background-size: 200% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: goldSweep 4s ease-in-out infinite;
+  }
+
+  /* Altın ince çizgi (sayfa içi ayraç) */
+  .divider-gold {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(200,154,42,0.5), transparent);
+    margin: 1rem 0;
+  }
+
+  /* ── Form ── */
+  .input-base {
+    @apply w-full bg-white border border-pearl-20 rounded-xl px-4 py-3 text-pearl
+           placeholder-pearl-50 outline-none transition-all duration-200;
+    font-feature-settings: 'tnum';
+  }
+  .input-base:hover {
+    @apply border-pearl-30;
+  }
+  .input-base:focus {
+    @apply border-gold-primary/70;
+    box-shadow: 0 0 0 4px rgba(200,154,42,0.15);
+  }
+  .input-base:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  textarea.input-base {
+    @apply leading-relaxed;
+  }
+
+  select.input-base {
+    @apply appearance-none cursor-pointer pr-10;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23c89a2a' d='M3 4.5l3 3 3-3'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+  }
+
+  /* ── Butonlar ── */
+  .btn-gold {
+    @apply w-full font-semibold py-3 px-6 rounded-xl text-pearl
+           transition-all duration-200 relative overflow-hidden;
+    background: linear-gradient(135deg, #e6c452 0%, #c89a2a 50%, #a07a1f 100%);
+    background-size: 200% 100%;
+    box-shadow:
+      0 6px 18px -4px rgba(200,154,42,0.45),
+      inset 0 1px 0 rgba(255,255,255,0.45);
+    letter-spacing: 0.01em;
+    text-shadow: 0 1px 0 rgba(255,255,255,0.25);
+  }
+  .btn-gold:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background-position: 100% 50%;
+    box-shadow:
+      0 12px 28px -6px rgba(200,154,42,0.55),
+      inset 0 1px 0 rgba(255,255,255,0.4);
+  }
+  .btn-gold:active:not(:disabled) {
+    transform: translateY(0);
+    transition-duration: 80ms;
+  }
+  .btn-gold:disabled {
+    @apply opacity-40 cursor-not-allowed;
+    transform: none;
+  }
+  /* Gold parlama (hover'da kayan ışıltı) */
+  .btn-gold::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.55) 50%, transparent 60%);
+    transform: translateX(-100%);
+    transition: transform 0.7s ease;
+    pointer-events: none;
+  }
+  .btn-gold:hover:not(:disabled)::before {
+    transform: translateX(100%);
+  }
+
+  /* İkincil buton */
+  .btn-ghost {
+    @apply w-full font-medium py-3 px-6 rounded-xl text-pearl-80
+           bg-white border border-pearl-20
+           transition-all duration-200;
+  }
+  .btn-ghost:hover {
+    @apply bg-pearl-5 border-pearl-30 text-pearl;
+  }
+
+  /* Çıplak metin buton */
+  .btn-bare {
+    @apply text-pearl-70 hover:text-gold-primary transition-colors duration-200;
+  }
+
+  /* ── İkon kutuları ── */
+  .icon-tile {
+    @apply w-12 h-12 rounded-2xl flex items-center justify-center text-xl shrink-0;
+  }
+  .icon-tile-gold {
+    @apply icon-tile bg-gold-soft text-gold-primary;
+    box-shadow: inset 0 0 0 1px rgba(200,154,42,0.25);
+  }
+
+  /* ── Rozet / etiket ── */
+  /* Açık temada metinler daha doygun tonlarda — okunabilirlik için */
+  .badge {
+    @apply text-[10px] uppercase tracking-widest font-semibold px-2.5 py-1 rounded-full;
+  }
+  .badge-gold { @apply badge bg-gold-soft text-gold-dark; }
+  .badge-success { @apply badge bg-emerald-500/15 text-emerald-700; }
+  .badge-warning { @apply badge bg-amber-500/15 text-amber-700; }
+  .badge-danger { @apply badge bg-red-500/15 text-red-700; }
+  .badge-info { @apply badge bg-blue-500/15 text-blue-700; }
+
+  /* ── Status dot (pulse) ── */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full relative;
+  }
+  .status-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 9999px;
+    background: inherit;
+    opacity: 0.35;
+    animation: pulseDot 1.8s ease-in-out infinite;
+  }
+  .status-dot-gold { @apply status-dot bg-gold-primary; }
+  .status-dot-emerald { @apply status-dot bg-emerald-500; }
+  .status-dot-blue { @apply status-dot bg-blue-500; }
+  .status-dot-red { @apply status-dot bg-red-500; }
+
+  /* ── Section başlığı ── */
+  .section-title {
+    @apply text-[11px] uppercase tracking-extra-wide text-pearl-50 font-semibold mb-3;
+  }
+
+  /* ── KPI kartı (gradient parıltılı) ── */
+  .kpi-card {
+    @apply glass-card p-5 relative overflow-hidden;
+    transition: border-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+  }
+  .kpi-card:hover {
+    @apply border-gold-primary/30;
+    transform: translateY(-3px);
+    box-shadow:
+      0 18px 44px -16px rgba(28,28,32,0.20),
+      0 0 0 1px rgba(200,154,42,0.20);
+  }
+  .kpi-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top right, rgba(200,154,42,0.12), transparent 60%);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .kpi-card:hover::before {
+    opacity: 1;
+  }
+  /* KPI üst altın çizgi */
+  .kpi-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 12%; right: 12%;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(200,154,42,0.55), transparent);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .kpi-card:hover::after {
+    opacity: 1;
+  }
+
+  /* ── Tablo görünümü ── */
+  .data-row {
+    @apply flex items-center gap-4 px-4 py-3.5 border-b border-pearl-10 last:border-b-0
+           transition-colors hover:bg-pearl-5;
+  }
+
+  /* ── Dramatik üst banner (açık zemin + altın akzent) ── */
+  .hero-banner {
+    @apply relative overflow-hidden rounded-3xl;
+    background:
+      radial-gradient(ellipse 80% 100% at 0% 0%, rgba(200,154,42,0.22) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 80% at 100% 100%, rgba(230,196,82,0.16) 0%, transparent 55%),
+      radial-gradient(ellipse 40% 60% at 50% 100%, rgba(160,122,31,0.08) 0%, transparent 60%),
+      linear-gradient(135deg, #ffffff 0%, #f3f3f6 50%, #fbfbfc 100%);
+    box-shadow:
+      0 24px 60px -24px rgba(28,28,32,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.8),
+      inset 0 0 0 1px rgba(200,154,42,0.20);
+  }
+  .hero-banner::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image:
+      radial-gradient(rgba(200,154,42,0.08) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+    opacity: 0.5;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+    -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+  }
+  .hero-banner::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(200,154,42,0.55), transparent);
+  }
+
+  /* ── POS modül kartı (büyük dashboard kartları) ── */
+  .pos-module-card {
+    @apply relative overflow-hidden bg-white border border-pearl-10 rounded-3xl p-6
+           transition-all duration-300 cursor-pointer flex flex-col items-center justify-center
+           aspect-square text-center;
+    box-shadow: 0 6px 20px -10px rgba(28,28,32,0.10);
+  }
+  .pos-module-card:hover {
+    @apply border-gold-primary/40;
+    transform: translateY(-4px);
+    box-shadow:
+      0 24px 50px -18px rgba(200,154,42,0.35),
+      0 0 0 1px rgba(200,154,42,0.20);
+  }
+  .pos-module-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at top, rgba(200,154,42,0.16), transparent 60%);
+    opacity: 0;
+    transition: opacity 0.35s ease;
+    pointer-events: none;
+  }
+  .pos-module-card:hover::before { opacity: 1; }
+
+  /* Hover'da parlama sweep */
+  .pos-module-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -75%;
+    width: 60%;
+    height: 100%;
+    background: linear-gradient(115deg, transparent 30%, rgba(230,196,82,0.15) 50%, transparent 70%);
+    transform: skewX(-12deg);
+    transition: left 0.8s ease;
+    pointer-events: none;
+  }
+  .pos-module-card:hover::after { left: 130%; }
+
+  .pos-module-card .module-icon {
+    @apply w-16 h-16 mb-4 rounded-2xl flex items-center justify-center text-3xl text-gold-primary
+           bg-gradient-to-br from-gold-primary/20 to-gold-primary/5 border border-gold-primary/30
+           transition-all duration-300;
+  }
+  .pos-module-card:hover .module-icon {
+    @apply scale-110 from-gold-primary/30 to-gold-primary/10 border-gold-primary/60;
+    box-shadow: 0 0 36px rgba(200,154,42,0.35);
+  }
+
+  /* ── Aksiyon paneli butonu ── */
+  .action-btn {
+    @apply w-full flex flex-col items-center justify-center gap-1.5 py-4 px-2 rounded-xl
+           text-pearl-70 hover:text-gold-primary hover:bg-gold-soft transition-all duration-200;
+  }
+  .action-btn:active:not(:disabled) {
+    transform: scale(0.96);
+  }
+  .action-btn i {
+    @apply text-xl;
+  }
+  .action-btn span {
+    @apply text-[11px] font-medium tracking-wide;
+  }
+  .action-btn.active {
+    @apply text-gold-primary bg-gold-soft;
+    box-shadow: inset 0 0 0 1px rgba(200,154,42,0.25);
+  }
+
+  /* ── Masa kartı (durum renklerine göre) ── */
+  .table-card {
+    @apply relative overflow-hidden rounded-2xl p-4 border-2 transition-all cursor-pointer
+           aspect-[5/4] flex flex-col;
+  }
+  .table-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 16px 32px -12px rgba(28,28,32,0.18);
+  }
+  .table-card.empty {
+    @apply bg-white border-pearl-10 hover:border-pearl-30;
+    box-shadow: 0 2px 8px -4px rgba(28,28,32,0.06);
+  }
+  .table-card.occupied {
+    background: linear-gradient(135deg, rgba(200,154,42,0.18) 0%, rgba(200,154,42,0.05) 100%);
+    @apply border-gold-primary/50;
+    box-shadow: inset 0 1px 0 rgba(230,196,82,0.25);
+  }
+  .table-card.occupied:hover {
+    @apply border-gold-primary;
+    box-shadow: 0 14px 32px -10px rgba(200,154,42,0.30), inset 0 1px 0 rgba(230,196,82,0.35);
+  }
+  .table-card.payment {
+    background: linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(59,130,246,0.05) 100%);
+    @apply border-blue-500/50;
+    box-shadow: inset 0 1px 0 rgba(96,165,250,0.22);
+  }
+  .table-card.payment:hover {
+    box-shadow: 0 14px 32px -10px rgba(59,130,246,0.30), inset 0 1px 0 rgba(96,165,250,0.32);
+  }
+  .table-card.reserved {
+    background: linear-gradient(135deg, rgba(245,158,11,0.18) 0%, rgba(245,158,11,0.05) 100%);
+    @apply border-amber-500/50;
+    box-shadow: inset 0 1px 0 rgba(252,211,77,0.22);
+  }
+  .table-card.reserved:hover {
+    box-shadow: 0 14px 32px -10px rgba(245,158,11,0.30), inset 0 1px 0 rgba(252,211,77,0.32);
+  }
+
+  /* ── Şık iskelet shimmer (skeleton) ── */
+  .skeleton-bar {
+    @apply rounded;
+    background: linear-gradient(
+      90deg,
+      rgba(28,28,32,0.08) 0%,
+      rgba(200,154,42,0.22) 50%,
+      rgba(28,28,32,0.08) 100%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2.2s linear infinite;
+  }
+
+  /* ── Mini sparkline (KPI altı) ── */
+  .sparkline {
+    height: 24px;
+    width: 100%;
+    background: linear-gradient(180deg, rgba(200,154,42,0.22), transparent);
+    mask-image: linear-gradient(180deg, black, transparent);
+    -webkit-mask-image: linear-gradient(180deg, black, transparent);
+    border-radius: 6px;
+  }
+
+  /* ── Premium toast ── */
+  .toast-card {
+    @apply relative overflow-hidden surface-elevated p-4 pointer-events-auto;
+    box-shadow:
+      0 20px 44px -18px rgba(28,28,32,0.22),
+      0 0 0 1px rgba(255,255,255,0.6) inset;
+  }
+  .toast-card .toast-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, currentColor, transparent);
+    animation: shimmer 4s linear forwards;
+  }
+
+  /* ── Sayfa girişi ── */
+  .page-fade-in {
+    animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
+
+@layer utilities {
+  /* ── Açık tema okunabilirlik override'ları ──
+     Önceki koyu temada -300/400 tonları parlak metin için kullanılıyordu;
+     açık zemine geçince soluk kalıyorlar → daha doygun (700) tonlara map. */
+  .text-emerald-300, .text-emerald-400 { color: #047857; }
+  .text-amber-300, .text-amber-400 { color: #b45309; }
+  .text-red-300, .text-red-400 { color: #b91c1c; }
+  .text-blue-300, .text-blue-400 { color: #1d4ed8; }
+  .text-gold-bright, .text-gold-light { color: #7a5f18; }
+
+  /* ── Altın zemin üstündeki metin renkleri ──
+     Eski temada ink-0..ink-200 koyu/siyahtı; altın butonlarda koyu metin
+     kontrastı sağlıyordu. Açık tema'da ink rampası açık olduğu için bu
+     class'lar (`text-ink-100`, `text-bg-dark` vs.) altın bg üzerinde
+     görünmez olur. Override ile koyu antrasite zorlayıp kontrastı koru. */
+  .text-ink-0, .text-ink-50, .text-ink-100,
+  .text-ink-200, .text-ink-300,
+  .text-bg-dark { color: #1c1c20 !important; }
+
+  /* ── Açık zemin üstündeki ana metin tonları ──
+     pearl-90/80 "ana metin" anlamında kalır (zaten koyu rampamızda).
+     Bazı bileşenler eski temadan kalma text-pearl-80 kullanıyor — açık
+     zeminde okunaklı olduğundan dokunmuyoruz. */
+
+  /* Sayı için tabular figures */
+  .tabular {
+    font-feature-settings: 'tnum' 1, 'lnum' 1;
+  }
+
+  /* Vurgu satırı (sol kenar altın çizgi) */
+  .ring-gold-left {
+    box-shadow: inset 3px 0 0 #c89a2a;
+  }
+
+  /* Sağ kenar altın */
+  .ring-gold-right {
+    box-shadow: inset -3px 0 0 #c89a2a;
+  }
+
+  /* Genel bg renkleri */
+  .bg-bg-dark { background-color: #f6f6f8 !important; }
+
+  /* No-tap-highlight (mobil için) */
+  .no-tap-highlight {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Gold focus ring */
+  .ring-focus-gold:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(200,154,42,0.40);
+  }
+}

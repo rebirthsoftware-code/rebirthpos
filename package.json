@@ -1,0 +1,32 @@
+{
+  "name": "rebirth-pos",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Çok şubeli restoran yönetim sistemi",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:backend dev:frontend",
+    "dev:backend": "npm --workspace apps/backend run dev",
+    "dev:frontend": "npm --workspace apps/frontend run dev",
+    "dev:desktop": "wait-on http://localhost:3000 && npm --workspace apps/desktop run dev",
+    "dev:tum": "npm-run-all --parallel dev:backend dev:frontend dev:desktop",
+    "build": "npm-run-all build:backend build:frontend",
+    "build:backend": "npm --workspace apps/backend run build",
+    "build:frontend": "npm --workspace apps/frontend run build",
+    "build:desktop": "npm --workspace apps/frontend run generate:desktop && npm --workspace apps/desktop run build",
+    "build:desktop:win": "npm --workspace apps/frontend run generate:desktop && npm --workspace apps/desktop run build:win",
+    "prisma:generate": "npm --workspace apps/backend run prisma:generate",
+    "prisma:migrate": "npm --workspace apps/backend run prisma:migrate"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5",
+    "wait-on": "^8.0.1"
+  },
+  "dependencies": {
+    "@nestjs/platform-socket.io": "^10.4.22",
+    "@nestjs/websockets": "^10.4.22"
+  }
+}

@@ -104,21 +104,19 @@ npm --workspace apps/backend run prisma:studio
 cd apps/backend && npx prisma migrate dev --name aciklayici-isim
 ```
 
-## Üretim Deploy (Vercel + Render + Neon)
+## Üretim Deploy (her şey Vercel + Neon)
 
-Mimari: **Frontend → Vercel · Backend → Render/Railway · DB → Neon Postgres**.
-NestJS backend kalıcı sunucu + Socket.IO (canlı bildirim) gerektirdiği için
-Vercel serverless yerine kalıcı sunucuda; Nuxt frontend Vercel'de çalışır.
+Mimari: **Frontend → Vercel · Backend → Vercel (serverless) · DB → Neon Postgres**.
+Backend REST'tir (WebSocket yok); canlı güncelleme **polling** ile sağlanır — frontend
+belli aralıkla veriyi yeniden çeker. Böylece kalıcı sunucu gerekmez. Prisma, Neon'a
+**HTTP (fetch/443)** üzerinden bağlanır (`@prisma/adapter-neon`).
 
-Veritabanı bağlantısı `endam` ile aynı desende: Prisma `postgresql` +
-`DATABASE_URL`, `postinstall: prisma generate`, build'de `prisma db push` + seed.
+Tam adım adım rehber: **[DEPLOYMENT.md](DEPLOYMENT.md)**. Kısaca **iki Vercel projesi**:
 
-Tam adım adım rehber: **[DEPLOYMENT.md](DEPLOYMENT.md)**. Kısaca:
-
-1. [Neon](https://neon.tech)'da Postgres aç → `DATABASE_URL` al
-2. Backend'i Render'a kur (`render.yaml` blueprint hazır) → env değişkenlerini gir
-3. Frontend'i Vercel'e kur (Root Directory: `apps/frontend`, `NUXT_PUBLIC_API_BASE` = Render URL'i + `/api`)
-4. Backend `CORS_ORIGIN`'i Vercel URL'ine ayarla → restart
+1. [Neon](https://neon.tech)'da Postgres aç → `DATABASE_URL` al (tablolar + demo veri kurulu)
+2. **Backend projesi** → Root Directory `apps/backend`; env: `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `CORS_ORIGIN`
+3. **Frontend projesi** (repo kökü) → `NUXT_PUBLIC_API_BASE` = backend URL'i + `/api`
+4. Backend `CORS_ORIGIN` = frontend Vercel URL'i
 
 ## Yol Haritası
 

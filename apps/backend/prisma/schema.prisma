@@ -6,7 +6,8 @@
 // Olası değerler src/common/enums.ts dosyasında sabit olarak tanımlı.
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {

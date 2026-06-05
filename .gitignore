@@ -11,6 +11,7 @@ dist
 .idea
 coverage
 .cache
+*.tsbuildinfo
 
 # SQLite veritabanı — gerçek satış/ödeme verisi, repoya gitmemeli
 *.db

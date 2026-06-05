@@ -110,15 +110,10 @@ onMounted(() => {
   // başlar. Kasiyer adisyon detayda gezerken müşteri ekranı logo/hoş geldiniz
   // ekranında kalır. Yayın AppOdemeEkrani lifecycle'ı içinden yönetilir.
 
-  const off1 = on('siparis:yeni', (v: any) => {
-    if (v?.adisyonId === adisyonId) yukle();
-  });
-  const off2 = on('adisyon:guncel', (v: any) => {
-    if (v?.adisyonId === adisyonId) yukle();
-  });
-  const off3 = on('odeme:yeni', (v: any) => {
-    if (v?.adisyonId === adisyonId) yukle();
-  });
+  // Polling (useSocket): bu adisyonu periyodik olarak yeniden çek.
+  const off1 = on('siparis:yeni', () => yukle());
+  const off2 = on('adisyon:guncel', () => yukle());
+  const off3 = on('odeme:yeni', () => yukle());
   onUnmounted(() => {
     off1?.();
     off2?.();

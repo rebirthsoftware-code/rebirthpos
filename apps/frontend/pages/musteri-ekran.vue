@@ -105,14 +105,15 @@ onMounted(() => {
   const off = musteri.dinle(durumuTara);
 
   // Realtime: kasa adisyona kalem eklerse anında yansısın
-  const off1 = on('siparis:yeni', (v: any) => {
-    if (v?.adisyonId && v.adisyonId === aktifAdisyonId.value) adisyonYukle(v.adisyonId);
+  // Polling (useSocket): aktif adisyon varsa periyodik olarak yeniden çek.
+  const off1 = on('siparis:yeni', () => {
+    if (aktifAdisyonId.value) adisyonYukle(aktifAdisyonId.value);
   });
-  const off2 = on('adisyon:guncel', (v: any) => {
-    if (v?.adisyonId && v.adisyonId === aktifAdisyonId.value) adisyonYukle(v.adisyonId);
+  const off2 = on('adisyon:guncel', () => {
+    if (aktifAdisyonId.value) adisyonYukle(aktifAdisyonId.value);
   });
-  const off3 = on('odeme:yeni', (v: any) => {
-    if (v?.adisyonId && v.adisyonId === aktifAdisyonId.value) adisyonYukle(v.adisyonId);
+  const off3 = on('odeme:yeni', () => {
+    if (aktifAdisyonId.value) adisyonYukle(aktifAdisyonId.value);
   });
 
   // Saat

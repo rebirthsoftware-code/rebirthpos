@@ -1,5 +1,5 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "npm install",
-  "buildCommand": "npm --workspace apps/frontend run build && rm -rf .vercel/output && mkdir -p .vercel && cp -r apps/frontend/.vercel/output .vercel/output"
+  "installCommand": "npm install --include=dev",
+  "buildCommand": "node scripts/build-vercel.mjs"
 }

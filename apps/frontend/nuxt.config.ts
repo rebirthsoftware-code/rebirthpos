@@ -41,7 +41,11 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:3001/api',
+      // Üretimde (Vercel) backend aynı projede /api altında → göreli yol, CORS yok.
+      // Yerelde ayrı NestJS portu. NUXT_PUBLIC_API_BASE her şeyi geçersiz kılar.
+      apiBase:
+        process.env.NUXT_PUBLIC_API_BASE ||
+        (process.env.VERCEL ? '/api' : 'http://localhost:3001/api'),
     },
   },
 

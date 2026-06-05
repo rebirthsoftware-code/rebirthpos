@@ -1,7 +1,8 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": null,
   "installCommand": "npm install --include=dev",
-  "buildCommand": "npm run build && mkdir -p public && echo '<!doctype html><meta charset=utf-8><title>Rebirth POS API</title>API çalışıyor — /api/health' > public/index.html",
+  "buildCommand": "npm run build && mkdir -p public && echo ok > public/index.html",
   "outputDirectory": "public",
   "functions": {
     "api/index.js": {

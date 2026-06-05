@@ -31,11 +31,14 @@ build sırasında `prisma db push` + seed (bkz. `apps/backend/scripts/db-prepare
 2. **Create project** → ad: `rebirthpos`, region: `Europe (Frankfurt)`
 3. **Connection string**'i kopyala (`postgresql://...@...neon.tech/...?sslmode=require`)
 
-Bu değer hem backend `DATABASE_URL`'i olacak.
+Bu değer backend `DATABASE_URL`'i olacak.
 
-> Not: Kalıcı sunucu (Render) az sayıda bağlantı tuttuğu için Neon'un
-> normal (pooled olmayan) connection string'i yeterli. Ayrı `directUrl`
-> gerekmez.
+> **Hangi connection string?** Render'da **direct / unpooled** olanı kullan
+> (Neon'un `DATABASE_URL_UNPOOLED` değeri — host'ta `-pooler` **yok**).
+> Sebebi: `prisma db push` doğrudan bağlantı ister; pooled (PgBouncer)
+> string ile schema işlemleri hata verir. Kalıcı sunucu az bağlantı
+> tuttuğu için pooler'a da gerek yok.
+> (İleride serverless'a geçersen: pooled string + `?pgbouncer=true`.)
 
 ## 2) JWT secret'larını üret
 

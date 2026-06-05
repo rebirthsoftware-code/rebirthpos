@@ -1,8 +1,8 @@
 // Rebirth POS — Veritabanı Şeması
 // Multi-tenant: her satırda sube_id → row-level izolasyon
-// Geliştirme: SQLite | Üretim: PostgreSQL'e geçilecek
+// Veritabanı: PostgreSQL (Neon — bulut). Bağlantı DATABASE_URL ile.
 //
-// Not: SQLite enum desteklemediği için tüm enum alanlar String.
+// Not: Enum alanlar String olarak tutulur (eski SQLite uyumundan kalma).
 // Olası değerler src/common/enums.ts dosyasında sabit olarak tanımlı.
 
 generator client {
@@ -10,7 +10,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

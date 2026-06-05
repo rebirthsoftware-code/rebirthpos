@@ -1,0 +1,35 @@
+# Render Blueprint — rebirthpos backend (NestJS + Socket.IO)
+# Mimari: Frontend → Vercel | Backend → Render | DB → Neon Postgres (ortak)
+#
+# Kullanım: Render Dashboard → New → Blueprint → bu repoyu seç.
+# "sync: false" işaretli değişkenler gizlidir; panelden elle girilir.
+services:
+  - type: web
+    name: rebirthpos-backend
+    runtime: node
+    region: frankfurt
+    plan: free
+    branch: main
+    # Kök workspace'ten kurulur: websocket paketlerinin hoisting'i dev ile
+    # birebir aynı kalsın ve gateway scan 404 vermesin diye (bkz. DURUM.md).
+    buildCommand: npm install --include=dev && npm run build:backend && npm --workspace apps/backend run db:deploy
+    startCommand: npm --workspace apps/backend run start:prod
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        sync: false        # Neon connection string — panelden gir
+      - key: JWT_SECRET
+        sync: false        # node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+      - key: JWT_REFRESH_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 15m
+      - key: JWT_REFRESH_EXPIRES_IN
+        value: 7d
+      - key: CORS_ORIGIN
+        sync: false        # Vercel frontend URL'i, örn. https://rebirthpos.vercel.app
+      - key: OKC_MARKA
+        value: MOCK

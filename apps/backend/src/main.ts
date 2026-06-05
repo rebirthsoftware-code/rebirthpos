@@ -43,7 +43,8 @@ async function bootstrap() {
   });
 
   const port = config.get<number>('PORT', 3001);
-  await app.listen(port);
-  console.log(`🚀 Backend hazır: http://localhost:${port}/api`);
+  // Render/Railway gibi platformlar 0.0.0.0'a bind edilmeyi bekler.
+  await app.listen(port, '0.0.0.0');
+  console.log(`🚀 Backend hazır: port ${port} (/api)`);
 }
 bootstrap();

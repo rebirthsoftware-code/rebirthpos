@@ -46,14 +46,17 @@ async function listele() {
   if (!sube.aktifSubeId) return;
   yukleniyor.value = true;
   try {
-    const [k, m, a] = await Promise.all([
+    // allSettled: biri (örn. adisyonlar) hata verse bile masalar/katlar görünür.
+    // Promise.all olsaydı tek hata tüm listeyi gizlerdi → "masaları göremiyorum".
+    const [k, m, a] = await Promise.allSettled([
       apiFetch<Kat[]>(`/katlar?subeId=${sube.aktifSubeId}`),
       apiFetch<Masa[]>(`/masalar?subeId=${sube.aktifSubeId}`),
       apiFetch<AktifAdisyon[]>(`/adisyonlar?subeId=${sube.aktifSubeId}`),
     ]);
-    katlar.value = k;
-    masalar.value = m;
-    adisyonlar.value = a;
+    if (k.status === 'fulfilled') katlar.value = k.value;
+    if (m.status === 'fulfilled') masalar.value = m.value;
+    else toast.hata((m.reason as any)?.data?.message || 'Masalar yüklenemedi');
+    if (a.status === 'fulfilled') adisyonlar.value = a.value;
   } finally {
     yukleniyor.value = false;
   }
@@ -188,6 +191,35 @@ async function masaSil(m: Masa) {
   }
 }
 
+// ── QR kod (masa / menü linki) ──
+const qrModalAcik = ref(false);
+const qrLink = ref('');
+const qrBaslik = ref('');
+const qrAlt = ref('');
+
+function qrBaseUrl() {
+  return import.meta.client ? window.location.origin : '';
+}
+
+function masaQrAc(m: Masa) {
+  if (!sube.aktifSubeId) return;
+  qrLink.value = `${qrBaseUrl()}/qr/${sube.aktifSubeId}?masa=${m.id}`;
+  qrBaslik.value = `${m.ad}`;
+  qrAlt.value = `${sube.aktifSube?.ad || ''} · Masa QR (sipariş + ödeme)`;
+  qrModalAcik.value = true;
+}
+
+function menuQrAc() {
+  if (!sube.aktifSubeId) {
+    toast.hata('Önce bir şube seç');
+    return;
+  }
+  qrLink.value = `${qrBaseUrl()}/qr/${sube.aktifSubeId}`;
+  qrBaslik.value = sube.aktifSube?.ad || 'Menü';
+  qrAlt.value = 'Genel menü QR (masasız — sipariş için)';
+  qrModalAcik.value = true;
+}
+
 const katModalAcik = ref(false);
 const duzenlenenKat = ref<Kat | null>(null);
 const katForm = reactive({ ad: '', sira: 0 });
@@ -228,6 +260,7 @@ async function katKaydet() {
       :ogeler="[
         { ad: 'Yeni Masa', ikon: 'fa-plus', vurgu: true, onClick: masaYeniAc },
         { ad: 'Yeni Kat', ikon: 'fa-layer-group', onClick: katYeniAc },
+        { ad: 'Menü QR', ikon: 'fa-qrcode', onClick: menuQrAc },
         { ad: 'Yenile', ikon: 'fa-rotate', onClick: listele },
       ]"
     />
@@ -364,6 +397,9 @@ async function katKaydet() {
               <span v-else class="badge-success !text-[9px]">Boş</span>
             </div>
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition" @click.stop>
+              <button @click="masaQrAc(m)" title="QR kodu" class="text-pearl-50 hover:text-gold-primary p-1 rounded hover:bg-pearl-10">
+                <i class="fas fa-qrcode text-xs" />
+              </button>
               <button @click="masaDuzenleAc(m)" class="text-pearl-50 hover:text-gold-primary p-1 rounded hover:bg-pearl-10">
                 <i class="fas fa-pen-to-square text-xs" />
               </button>
@@ -506,6 +542,14 @@ async function katKaydet() {
       </div>
     </form>
   </AppModal>
+
+  <QrKodModal
+    :acik="qrModalAcik"
+    :baslik="qrBaslik"
+    :alt-baslik="qrAlt"
+    :link="qrLink"
+    @kapat="qrModalAcik = false"
+  />
 
   <AppModal
     :acik="katModalAcik"

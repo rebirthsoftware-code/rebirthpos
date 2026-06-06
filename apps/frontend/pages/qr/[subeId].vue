@@ -279,20 +279,20 @@ async function odemeyiBaslat() {
     </Head>
   </Html>
 
-  <div class="min-h-screen pb-36 bg-mesh-luxe">
+  <div class="qr-screen min-h-screen pb-36 text-cream">
     <!-- Yükleniyor -->
     <div v-if="yukleniyor" class="min-h-screen flex flex-col items-center justify-center gap-4">
       <div class="w-16 h-16 rounded-2xl bg-gold-gradient shadow-gold-glow flex items-center justify-center animate-pulse-gold">
-        <i class="fas fa-utensils text-2xl text-white" />
+        <i class="fas fa-utensils text-2xl text-[#1c150a]" />
       </div>
-      <i class="fas fa-spinner fa-spin text-xl text-gold-primary" />
+      <i class="fas fa-spinner fa-spin text-xl text-gold-bright" />
     </div>
 
     <!-- Hata -->
     <div v-else-if="hata" class="min-h-screen flex items-center justify-center p-6">
-      <div class="surface-elevated p-8 text-center max-w-sm shadow-elevated">
+      <div class="lux-card p-8 text-center max-w-sm">
         <i class="fas fa-circle-exclamation text-4xl text-red-400 mb-4 block" />
-        <p class="text-red-500 font-medium">{{ hata }}</p>
+        <p class="text-red-300 font-medium">{{ hata }}</p>
       </div>
     </div>
 
@@ -302,16 +302,16 @@ async function odemeyiBaslat() {
         enter-active-class="transition duration-300" leave-active-class="transition duration-200"
         enter-from-class="opacity-0" leave-to-class="opacity-0"
       >
-        <div v-if="basariMesaji" class="fixed inset-0 bg-pearl-60 backdrop-blur-md z-50 flex items-center justify-center p-6">
-          <div class="surface-elevated p-8 max-w-sm w-full text-center shadow-elevated animate-slide-up">
-            <div class="w-20 h-20 mx-auto rounded-full bg-emerald-500/10 flex items-center justify-center text-5xl text-emerald-500 mb-5">
+        <div v-if="basariMesaji" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-6">
+          <div class="lux-card p-8 max-w-sm w-full text-center animate-slide-up">
+            <div class="w-20 h-20 mx-auto rounded-full bg-emerald-500/15 flex items-center justify-center text-5xl text-emerald-400 mb-5">
               <i class="fas fa-circle-check" />
             </div>
-            <h2 class="text-xl font-bold gold-text mb-2">Siparişiniz Alındı</h2>
-            <p class="text-pearl-60 text-sm mb-5">Birazdan özenle hazırlanıp masanıza gelecek.</p>
-            <div class="rounded-2xl bg-gold-soft border border-gold-primary/20 py-3 mb-6">
-              <div class="text-[10px] uppercase tracking-[0.2em] text-gold-dark/70 mb-1">Sipariş No</div>
-              <div class="text-2xl font-bold gold-text">{{ basariMesaji.numara }}</div>
+            <h2 class="text-xl font-bold gold-grad mb-2">Siparişiniz Alındı</h2>
+            <p class="text-cream/55 text-sm mb-5">Birazdan özenle hazırlanıp masanıza gelecek.</p>
+            <div class="rounded-2xl bg-gold-primary/10 border border-gold-primary/25 py-3 mb-6">
+              <div class="text-[10px] uppercase tracking-[0.2em] text-gold-bright/70 mb-1">Sipariş No</div>
+              <div class="text-2xl font-bold gold-grad">{{ basariMesaji.numara }}</div>
             </div>
             <button @click="basariMesaji = null" class="btn-gold">Devam Et</button>
           </div>
@@ -323,15 +323,15 @@ async function odemeyiBaslat() {
         enter-active-class="transition duration-300" leave-active-class="transition duration-200"
         enter-from-class="opacity-0" leave-to-class="opacity-0"
       >
-        <div v-if="odemeSonucMesaji" class="fixed inset-0 bg-pearl-60 backdrop-blur-md z-50 flex items-center justify-center p-6">
-          <div class="surface-elevated p-8 max-w-sm w-full text-center shadow-elevated animate-slide-up">
-            <div :class="['w-20 h-20 mx-auto rounded-full flex items-center justify-center text-5xl mb-5', odemeSonucMesaji.basarili ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500']">
+        <div v-if="odemeSonucMesaji" class="fixed inset-0 bg-black/75 backdrop-blur-md z-50 flex items-center justify-center p-6">
+          <div class="lux-card p-8 max-w-sm w-full text-center animate-slide-up">
+            <div :class="['w-20 h-20 mx-auto rounded-full flex items-center justify-center text-5xl mb-5', odemeSonucMesaji.basarili ? 'bg-emerald-500/15 text-emerald-400' : 'bg-red-500/15 text-red-400']">
               <i :class="['fas', odemeSonucMesaji.basarili ? 'fa-circle-check' : 'fa-circle-xmark']" />
             </div>
-            <h2 class="text-xl font-bold gold-text mb-2">
+            <h2 class="text-xl font-bold gold-grad mb-2">
               {{ odemeSonucMesaji.basarili ? 'Ödeme Başarılı' : 'Ödeme Başarısız' }}
             </h2>
-            <p class="text-pearl-60 text-sm mb-6">{{ odemeSonucMesaji.metin }}</p>
+            <p class="text-cream/55 text-sm mb-6">{{ odemeSonucMesaji.metin }}</p>
             <button @click="odemeSonucMesaji = null" class="btn-gold">Tamam</button>
           </div>
         </div>
@@ -342,58 +342,58 @@ async function odemeyiBaslat() {
         enter-active-class="transition duration-300" leave-active-class="transition duration-200"
         enter-from-class="translate-y-full" leave-to-class="translate-y-full"
       >
-        <div v-if="sepetAcik" class="fixed inset-0 bg-pearl-60 backdrop-blur-sm z-40 flex items-end" @click.self="sepetAcik = false">
-          <div class="bg-white w-full max-h-[88vh] rounded-t-[28px] overflow-hidden flex flex-col shadow-soft-up">
-            <div class="p-3 flex justify-center"><span class="w-12 h-1.5 rounded-full bg-pearl-20" /></div>
-            <div class="px-5 pb-4 border-b border-pearl-10 flex items-center justify-between">
-              <h3 class="text-lg font-bold text-pearl flex items-center gap-2">
-                <i class="fas fa-bag-shopping text-gold-primary" />Sepetiniz
-                <span class="badge-gold">{{ sepetAdet }}</span>
+        <div v-if="sepetAcik" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 flex items-end" @click.self="sepetAcik = false">
+          <div class="qr-sheet w-full max-h-[88vh] rounded-t-[28px] overflow-hidden flex flex-col">
+            <div class="p-3 flex justify-center"><span class="w-12 h-1.5 rounded-full bg-cream/20" /></div>
+            <div class="px-5 pb-4 border-b border-white/10 flex items-center justify-between">
+              <h3 class="text-lg font-bold text-cream flex items-center gap-2">
+                <i class="fas fa-bag-shopping text-gold-bright" />Sepetiniz
+                <span class="text-[10px] uppercase tracking-widest font-semibold px-2.5 py-1 rounded-full bg-gold-primary/15 text-gold-bright">{{ sepetAdet }}</span>
               </h3>
-              <button @click="sepetAcik = false" class="w-9 h-9 rounded-full bg-pearl-5 text-pearl-60 hover:text-gold-primary">
+              <button @click="sepetAcik = false" class="w-9 h-9 rounded-full bg-white/5 text-cream/60 hover:text-gold-bright">
                 <i class="fas fa-times" />
               </button>
             </div>
 
             <div class="flex-1 overflow-y-auto p-4 space-y-2.5">
-              <div v-if="!sepet.length" class="text-center py-12 text-pearl-50">
-                <i class="fas fa-bag-shopping text-4xl text-gold-primary/25 mb-3 block" />
+              <div v-if="!sepet.length" class="text-center py-12 text-cream/45">
+                <i class="fas fa-bag-shopping text-4xl text-gold-primary/30 mb-3 block" />
                 Sepetiniz boş
               </div>
 
-              <div v-for="(s, i) in sepet" :key="i" class="flex items-center gap-3 bg-ink-100 rounded-2xl p-2.5">
+              <div v-for="(s, i) in sepet" :key="i" class="flex items-center gap-3 bg-white/5 border border-white/5 rounded-2xl p-2.5">
                 <div
                   class="w-14 h-14 rounded-xl bg-cover bg-center shrink-0 flex items-center justify-center"
-                  :style="s.urun.resimUrl ? { backgroundImage: `url('${s.urun.resimUrl}')` } : { background: `linear-gradient(140deg, ${urunRenk(s.urun)}22, ${urunRenk(s.urun)}0a)` }"
+                  :style="s.urun.resimUrl ? { backgroundImage: `url('${s.urun.resimUrl}')` } : { background: `linear-gradient(140deg, ${urunRenk(s.urun)}55, ${urunRenk(s.urun)}1a)` }"
                 >
                   <i v-if="!s.urun.resimUrl" :class="['fas', urunIkon(s.urun)]" :style="{ color: urunRenk(s.urun) }" />
                 </div>
                 <div class="flex-1 min-w-0">
-                  <div class="font-semibold text-sm leading-tight text-pearl truncate">{{ s.urun.ad }}</div>
-                  <div class="text-xs text-gold-dark font-medium mt-0.5">{{ paraFormat(s.urun.fiyat) }}</div>
+                  <div class="font-semibold text-sm leading-tight text-cream truncate">{{ s.urun.ad }}</div>
+                  <div class="text-xs text-gold-bright/90 font-medium mt-0.5">{{ paraFormat(s.urun.fiyat) }}</div>
                 </div>
-                <div class="flex items-center bg-white border border-pearl-10 rounded-full overflow-hidden shadow-sm">
-                  <button @click="sepetAzalt(i)" class="w-8 h-8 text-gold-primary hover:bg-gold-soft">−</button>
-                  <span class="w-7 text-center font-bold text-sm text-pearl">{{ s.adet }}</span>
-                  <button @click="s.adet++" class="w-8 h-8 text-gold-primary hover:bg-gold-soft">+</button>
+                <div class="flex items-center bg-white/5 border border-white/10 rounded-full overflow-hidden">
+                  <button @click="sepetAzalt(i)" class="w-8 h-8 text-gold-bright hover:bg-gold-primary/15">−</button>
+                  <span class="w-7 text-center font-bold text-sm text-cream">{{ s.adet }}</span>
+                  <button @click="s.adet++" class="w-8 h-8 text-gold-bright hover:bg-gold-primary/15">+</button>
                 </div>
               </div>
 
-              <div v-if="!masaId && sepet.length" class="space-y-2.5 pt-3 border-t border-pearl-10">
-                <div class="text-[11px] text-pearl-60 uppercase tracking-widest font-semibold">İletişim (Paket için)</div>
-                <input v-model="musteriAd" class="input-base" placeholder="Ad Soyad" />
-                <input v-model="musteriTel" class="input-base" placeholder="Telefon" />
+              <div v-if="!masaId && sepet.length" class="space-y-2.5 pt-3 border-t border-white/10">
+                <div class="text-[11px] text-cream/55 uppercase tracking-widest font-semibold">İletişim (Paket için)</div>
+                <input v-model="musteriAd" class="lux-input" placeholder="Ad Soyad" />
+                <input v-model="musteriTel" class="lux-input" placeholder="Telefon" />
               </div>
 
               <div v-if="sepet.length">
-                <textarea v-model="siparisNot" rows="2" class="input-base resize-none" placeholder="Sipariş notunuz (opsiyonel)" />
+                <textarea v-model="siparisNot" rows="2" class="lux-input resize-none" placeholder="Sipariş notunuz (opsiyonel)" />
               </div>
             </div>
 
-            <div v-if="sepet.length" class="p-5 border-t border-pearl-10 bg-white">
+            <div v-if="sepet.length" class="p-5 border-t border-white/10">
               <div class="flex items-center justify-between mb-4">
-                <span class="text-pearl-60">Toplam</span>
-                <span class="text-2xl font-bold gold-text">{{ paraFormat(sepetToplam) }}</span>
+                <span class="text-cream/55">Toplam</span>
+                <span class="text-2xl font-bold gold-grad">{{ paraFormat(sepetToplam) }}</span>
               </div>
               <button @click="siparisGonder" :disabled="gonderiliyor" class="btn-gold">
                 <i v-if="gonderiliyor" class="fas fa-spinner fa-spin mr-2" />
@@ -405,59 +405,59 @@ async function odemeyiBaslat() {
         </div>
       </Transition>
 
-      <!-- ═══════ Üst Başlık (premium) ═══════ -->
-      <header class="sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-pearl-10 shadow-glass">
+      <!-- ═══════ Üst Başlık ═══════ -->
+      <header class="qr-header sticky top-0 z-30 border-b border-white/10">
         <div class="max-w-3xl mx-auto px-4 pt-5 pb-4">
           <div class="flex items-center gap-4">
             <div class="relative shrink-0">
-              <img v-if="menu.sube.firma.logoUrl" :src="menu.sube.firma.logoUrl" class="w-14 h-14 rounded-2xl object-cover ring-2 ring-gold-primary/30" />
-              <div v-else class="w-14 h-14 rounded-2xl bg-gold-gradient shadow-gold-glow flex items-center justify-center text-2xl text-white">
+              <img v-if="menu.sube.firma.logoUrl" :src="menu.sube.firma.logoUrl" class="w-14 h-14 rounded-2xl object-cover ring-2 ring-gold-primary/40" />
+              <div v-else class="w-14 h-14 rounded-2xl bg-gold-gradient shadow-gold-glow flex items-center justify-center text-2xl text-[#1c150a]">
                 <i class="fas fa-utensils" />
               </div>
             </div>
             <div class="flex-1 min-w-0">
-              <div class="text-[10px] uppercase tracking-[0.25em] text-gold-dark/70 font-semibold mb-0.5">Dijital Menü</div>
-              <h1 class="text-xl font-bold gold-text leading-tight truncate">{{ menu.sube.firma.ad }}</h1>
-              <div class="text-xs text-pearl-50 mt-1 flex items-center gap-2 flex-wrap">
-                <span class="flex items-center gap-1"><i class="fas fa-location-dot text-gold-primary/70" />{{ menu.sube.ad }}</span>
-                <span v-if="masaAd" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gold-soft border border-gold-primary/20 text-gold-dark text-[11px] font-semibold">
+              <div class="text-[10px] uppercase tracking-[0.3em] text-gold-bright/70 font-semibold mb-0.5">Dijital Menü</div>
+              <h1 class="text-xl font-bold gold-grad leading-tight truncate">{{ menu.sube.firma.ad }}</h1>
+              <div class="text-xs text-cream/50 mt-1 flex items-center gap-2 flex-wrap">
+                <span class="flex items-center gap-1"><i class="fas fa-location-dot text-gold-bright/70" />{{ menu.sube.ad }}</span>
+                <span v-if="masaAd" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-gold-primary/15 border border-gold-primary/30 text-gold-bright text-[11px] font-semibold">
                   <i class="fas fa-chair" />{{ masaAd }}
                 </span>
               </div>
             </div>
           </div>
 
-          <!-- Menü / Hesap sekmesi — sadece masadan girişte -->
-          <div v-if="masaId" class="mt-4 grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl bg-ink-100 border border-pearl-10">
+          <div v-if="masaId" class="mt-4 grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl bg-white/5 border border-white/10">
             <button
               @click="gorunum = 'menu'"
-              :class="['py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2', gorunum === 'menu' ? 'bg-gold-gradient text-white shadow-gold-edge' : 'text-pearl-60']"
+              :class="['py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2', gorunum === 'menu' ? 'bg-gold-gradient text-[#1c150a] shadow-gold-edge' : 'text-cream/55']"
             >
               <i class="fas fa-utensils" />Menü
             </button>
             <button
               @click="hesabaGec"
-              :class="['py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2', gorunum === 'hesap' ? 'bg-gold-gradient text-white shadow-gold-edge' : 'text-pearl-60']"
+              :class="['py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2', gorunum === 'hesap' ? 'bg-gold-gradient text-[#1c150a] shadow-gold-edge' : 'text-cream/55']"
             >
               <i class="fas fa-receipt" />Hesabım / Öde
             </button>
           </div>
         </div>
+        <span class="block h-px bg-gold-line opacity-60" />
       </header>
 
       <!-- ═══════════════ MENÜ GÖRÜNÜMÜ ═══════════════ -->
       <div v-show="gorunum === 'menu'" class="max-w-3xl mx-auto px-4 pt-5 space-y-5">
         <!-- Arama -->
         <div class="relative">
-          <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gold-primary/60" />
-          <input v-model="arama" class="input-base pl-11 !rounded-2xl !bg-white" placeholder="Lezzet ara..." />
+          <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gold-bright/60" />
+          <input v-model="arama" class="lux-input !pl-11" placeholder="Lezzet ara..." />
         </div>
 
         <!-- Kategoriler -->
         <div class="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-thin">
           <button
             @click="aktifKategori = ''"
-            :class="['px-4 py-2.5 rounded-2xl text-sm whitespace-nowrap transition-all border font-medium flex items-center gap-2 shrink-0', aktifKategori === '' ? 'bg-gold-gradient text-white border-transparent shadow-gold-edge' : 'bg-white border-pearl-10 text-pearl-70']"
+            :class="['px-4 py-2.5 rounded-2xl text-sm whitespace-nowrap transition-all border font-medium flex items-center gap-2 shrink-0', aktifKategori === '' ? 'bg-gold-gradient text-[#1c150a] border-transparent shadow-gold-edge' : 'bg-white/5 border-white/10 text-cream/70']"
           >
             <i class="fas fa-star text-xs" />Tümü
             <span class="text-xs opacity-80">{{ sayilar[''] }}</span>
@@ -466,7 +466,7 @@ async function odemeyiBaslat() {
             v-for="k in menu.kategoriler"
             :key="k.id"
             @click="aktifKategori = k.id"
-            :class="['px-4 py-2.5 rounded-2xl text-sm whitespace-nowrap transition-all border font-medium flex items-center gap-2 shrink-0', aktifKategori === k.id ? 'bg-gold-gradient text-white border-transparent shadow-gold-edge' : 'bg-white border-pearl-10 text-pearl-70']"
+            :class="['px-4 py-2.5 rounded-2xl text-sm whitespace-nowrap transition-all border font-medium flex items-center gap-2 shrink-0', aktifKategori === k.id ? 'bg-gold-gradient text-[#1c150a] border-transparent shadow-gold-edge' : 'bg-white/5 border-white/10 text-cream/70']"
           >
             <i v-if="k.ikon" :class="['fas', k.ikon, 'text-xs']" :style="aktifKategori === k.id ? {} : { color: k.renk || undefined }" />
             {{ k.ad }}
@@ -474,16 +474,16 @@ async function odemeyiBaslat() {
           </button>
         </div>
 
-        <!-- Kategori başlığı (filtre aktifse) -->
+        <!-- Kategori başlığı -->
         <div v-if="aktifKategori && kategoriMap.get(aktifKategori)" class="flex items-center gap-2 pt-1">
           <i :class="['fas', kategoriMap.get(aktifKategori)?.ikon || 'fa-utensils']" :style="{ color: kategoriMap.get(aktifKategori)?.renk || undefined }" />
-          <h2 class="text-base font-bold text-pearl">{{ kategoriMap.get(aktifKategori)?.ad }}</h2>
-          <span class="h-px flex-1 bg-gold-line" />
+          <h2 class="text-base font-bold text-cream">{{ kategoriMap.get(aktifKategori)?.ad }}</h2>
+          <span class="h-px flex-1 bg-gold-line opacity-50" />
         </div>
 
         <!-- Ürünler -->
-        <div v-if="!filtreli.length" class="surface-elevated p-10 text-center text-pearl-50">
-          <i class="fas fa-utensils text-4xl text-gold-primary/25 mb-3 block" />
+        <div v-if="!filtreli.length" class="lux-card p-10 text-center text-cream/45">
+          <i class="fas fa-utensils text-4xl text-gold-primary/30 mb-3 block" />
           Ürün bulunamadı
         </div>
 
@@ -491,9 +491,8 @@ async function odemeyiBaslat() {
           <article
             v-for="u in filtreli"
             :key="u.id"
-            class="group relative bg-white border border-pearl-10 rounded-2xl overflow-hidden shadow-glass hover:shadow-elevated hover:border-gold-primary/30 transition-all duration-300 hover:-translate-y-1 flex flex-col"
+            class="qr-prod group relative overflow-hidden flex flex-col"
           >
-            <!-- Görsel / placeholder -->
             <div class="relative aspect-square overflow-hidden">
               <img
                 v-if="u.resimUrl"
@@ -503,30 +502,28 @@ async function odemeyiBaslat() {
               <div
                 v-else
                 class="w-full h-full relative overflow-hidden"
-                :style="{ background: `linear-gradient(140deg, ${urunRenk(u)}26 0%, ${urunRenk(u)}0d 55%, rgba(255,255,255,0) 100%)` }"
+                :style="{ background: `radial-gradient(circle at 30% 25%, ${urunRenk(u)}40, ${urunRenk(u)}12 55%, rgba(255,255,255,0.02) 100%)` }"
               >
-                <i :class="['fas', urunIkon(u)]" class="absolute -right-3 -bottom-3 text-7xl opacity-[0.08]" :style="{ color: urunRenk(u) }" />
+                <i :class="['fas', urunIkon(u)]" class="absolute -right-3 -bottom-3 text-7xl opacity-[0.12]" :style="{ color: urunRenk(u) }" />
                 <div class="absolute inset-0 flex items-center justify-center">
-                  <i :class="['fas', urunIkon(u)]" class="text-3xl opacity-50" :style="{ color: urunRenk(u) }" />
+                  <i :class="['fas', urunIkon(u)]" class="text-3xl" :style="{ color: urunRenk(u) }" />
                 </div>
               </div>
-              <!-- adet rozeti (sepetteyse) -->
               <Transition enter-active-class="transition duration-200" enter-from-class="scale-0 opacity-0">
-                <span v-if="sepetAdetUrun(u.id)" class="absolute top-2 right-2 min-w-[24px] h-6 px-1.5 rounded-full bg-gold-gradient text-white text-xs font-bold flex items-center justify-center shadow-gold-edge">
+                <span v-if="sepetAdetUrun(u.id)" class="absolute top-2 right-2 min-w-[24px] h-6 px-1.5 rounded-full bg-gold-gradient text-[#1c150a] text-xs font-bold flex items-center justify-center shadow-gold-edge">
                   {{ sepetAdetUrun(u.id) }}
                 </span>
               </Transition>
             </div>
 
-            <!-- İçerik -->
             <div class="p-3 flex flex-col flex-1">
-              <h3 class="font-semibold text-sm leading-tight text-pearl line-clamp-1">{{ u.ad }}</h3>
-              <p v-if="u.aciklama" class="text-[11px] text-pearl-50 mt-0.5 line-clamp-2 leading-snug">{{ u.aciklama }}</p>
+              <h3 class="font-semibold text-sm leading-tight text-cream line-clamp-1">{{ u.ad }}</h3>
+              <p v-if="u.aciklama" class="text-[11px] text-cream/45 mt-0.5 line-clamp-2 leading-snug">{{ u.aciklama }}</p>
               <div class="mt-auto flex items-end justify-between pt-2.5">
-                <span class="text-lg font-bold gold-text leading-none">{{ paraFormat(u.fiyat) }}</span>
+                <span class="text-lg font-bold gold-grad leading-none">{{ paraFormat(u.fiyat) }}</span>
                 <button
                   @click="sepeteEkle(u)"
-                  class="w-9 h-9 rounded-xl bg-gold-gradient text-white shadow-gold-edge hover:scale-110 active:scale-90 transition flex items-center justify-center"
+                  class="w-9 h-9 rounded-xl bg-gold-gradient text-[#1c150a] shadow-gold-edge hover:scale-110 active:scale-90 transition flex items-center justify-center"
                   aria-label="Sepete ekle"
                 >
                   <i class="fas fa-plus text-sm" />
@@ -539,86 +536,84 @@ async function odemeyiBaslat() {
 
       <!-- ═══════════════ HESAP / ÖDEME GÖRÜNÜMÜ ═══════════════ -->
       <div v-show="gorunum === 'hesap' && masaId" class="max-w-3xl mx-auto px-4 pt-5 space-y-4">
-        <div v-if="hesapYukleniyor" class="surface-elevated p-12 text-center">
-          <i class="fas fa-spinner fa-spin text-3xl text-gold-primary" />
+        <div v-if="hesapYukleniyor" class="lux-card p-12 text-center">
+          <i class="fas fa-spinner fa-spin text-3xl text-gold-bright" />
         </div>
 
         <template v-else-if="hesap">
-          <div v-if="hesap.bos" class="surface-elevated p-10 text-center text-pearl-50 shadow-glass">
-            <div class="w-16 h-16 mx-auto rounded-2xl bg-gold-soft flex items-center justify-center text-3xl text-gold-primary/50 mb-4">
+          <div v-if="hesap.bos" class="lux-card p-10 text-center text-cream/45">
+            <div class="w-16 h-16 mx-auto rounded-2xl bg-gold-primary/10 flex items-center justify-center text-3xl text-gold-primary/60 mb-4">
               <i class="fas fa-receipt" />
             </div>
-            <p class="mb-1 text-pearl-70 font-medium">Bu masada henüz açık hesap yok.</p>
+            <p class="mb-1 text-cream/70 font-medium">Bu masada henüz açık hesap yok.</p>
             <p class="text-sm">Menüden sipariş verdiğinizde hesabınız burada görünecek.</p>
           </div>
 
           <template v-else>
-            <!-- Hesap dökümü -->
-            <div class="surface-elevated overflow-hidden shadow-elevated">
-              <div class="p-4 bg-gold-soft/60 border-b border-pearl-10 flex items-center justify-between">
+            <div class="lux-card overflow-hidden">
+              <div class="p-4 bg-gold-primary/10 border-b border-white/10 flex items-center justify-between">
                 <div>
-                  <div class="text-[10px] text-gold-dark/70 uppercase tracking-widest font-semibold">Hesap No</div>
-                  <div class="font-bold gold-text">{{ hesap.numara }}</div>
+                  <div class="text-[10px] text-gold-bright/70 uppercase tracking-widest font-semibold">Hesap No</div>
+                  <div class="font-bold gold-grad">{{ hesap.numara }}</div>
                 </div>
                 <div class="text-right">
-                  <div class="text-[10px] text-gold-dark/70 uppercase tracking-widest font-semibold">Masa</div>
-                  <div class="font-bold text-pearl">{{ hesap.masa.ad }}</div>
+                  <div class="text-[10px] text-gold-bright/70 uppercase tracking-widest font-semibold">Masa</div>
+                  <div class="font-bold text-cream">{{ hesap.masa.ad }}</div>
                 </div>
               </div>
 
               <div class="p-4 space-y-2.5">
                 <div v-for="(k, i) in hesap.kalemler" :key="i" class="flex items-center gap-3 text-sm">
-                  <span class="w-7 h-7 shrink-0 rounded-lg bg-gold-soft text-gold-dark text-xs font-bold flex items-center justify-center">{{ k.adet }}</span>
-                  <span class="flex-1 min-w-0 truncate text-pearl">{{ k.ad }}</span>
-                  <span class="text-pearl-50 text-xs">{{ paraFormat(k.birimFiyat) }}</span>
-                  <span class="font-semibold w-20 text-right text-pearl">{{ paraFormat(k.toplam) }}</span>
+                  <span class="w-7 h-7 shrink-0 rounded-lg bg-gold-primary/15 text-gold-bright text-xs font-bold flex items-center justify-center">{{ k.adet }}</span>
+                  <span class="flex-1 min-w-0 truncate text-cream">{{ k.ad }}</span>
+                  <span class="text-cream/40 text-xs">{{ paraFormat(k.birimFiyat) }}</span>
+                  <span class="font-semibold w-20 text-right text-cream">{{ paraFormat(k.toplam) }}</span>
                 </div>
               </div>
 
-              <div class="p-4 border-t border-pearl-10 space-y-1.5 text-sm bg-ink-100/50">
-                <div class="flex justify-between text-pearl-60"><span>Ara Toplam</span><span>{{ paraFormat(hesap.araToplam) }}</span></div>
-                <div class="flex justify-between text-pearl-60"><span>KDV</span><span>{{ paraFormat(hesap.kdvTutar) }}</span></div>
-                <div class="flex justify-between font-bold text-base pt-1"><span class="text-pearl">Toplam</span><span class="gold-text">{{ paraFormat(hesap.toplamTutar) }}</span></div>
-                <div v-if="(hesap.odenenTutar || 0) > 0" class="flex justify-between text-emerald-600 text-xs"><span>Ödenen</span><span>− {{ paraFormat(hesap.odenenTutar) }}</span></div>
-                <div class="flex justify-between font-bold text-lg pt-2 border-t border-pearl-10 mt-1"><span class="text-pearl">Kalan</span><span class="gold-text">{{ paraFormat(hesap.kalanTutar) }}</span></div>
+              <div class="p-4 border-t border-white/10 space-y-1.5 text-sm bg-black/20">
+                <div class="flex justify-between text-cream/55"><span>Ara Toplam</span><span>{{ paraFormat(hesap.araToplam) }}</span></div>
+                <div class="flex justify-between text-cream/55"><span>KDV</span><span>{{ paraFormat(hesap.kdvTutar) }}</span></div>
+                <div class="flex justify-between font-bold text-base pt-1"><span class="text-cream">Toplam</span><span class="gold-grad">{{ paraFormat(hesap.toplamTutar) }}</span></div>
+                <div v-if="(hesap.odenenTutar || 0) > 0" class="flex justify-between text-emerald-400 text-xs"><span>Ödenen</span><span>− {{ paraFormat(hesap.odenenTutar) }}</span></div>
+                <div class="flex justify-between font-bold text-lg pt-2 border-t border-white/10 mt-1"><span class="text-cream">Kalan</span><span class="gold-grad">{{ paraFormat(hesap.kalanTutar) }}</span></div>
               </div>
             </div>
 
-            <!-- Ödeme kutusu -->
-            <div v-if="(hesap.kalanTutar || 0) > 0" class="surface-elevated p-4 space-y-3 shadow-glass">
-              <div class="flex items-center gap-2 text-sm text-pearl-70">
-                <i class="fas fa-shield-halved text-gold-primary" />
-                <span>Güvenli online ödeme · <b class="text-pearl">PayTR Sanal POS</b></span>
+            <div v-if="(hesap.kalanTutar || 0) > 0" class="lux-card p-4 space-y-3">
+              <div class="flex items-center gap-2 text-sm text-cream/70">
+                <i class="fas fa-shield-halved text-gold-bright" />
+                <span>Güvenli online ödeme · <b class="text-cream">PayTR Sanal POS</b></span>
               </div>
               <button v-if="!odemeAcik" @click="odemeAcik = true" class="btn-gold">
                 <i class="fas fa-credit-card mr-2" />Kartla Öde · {{ paraFormat(hesap.kalanTutar) }}
               </button>
 
               <div v-if="odemeAcik" class="space-y-3">
-                <input v-model="odemeAd" class="input-base" placeholder="Ad Soyad (fiş için, opsiyonel)" />
-                <input v-model="odemeEposta" type="email" class="input-base" placeholder="E-posta (fiş için, opsiyonel)" />
+                <input v-model="odemeAd" class="lux-input" placeholder="Ad Soyad (fiş için, opsiyonel)" />
+                <input v-model="odemeEposta" type="email" class="lux-input" placeholder="E-posta (fiş için, opsiyonel)" />
                 <button @click="odemeyiBaslat" :disabled="odemeBaslatiliyor" class="btn-gold">
                   <i v-if="odemeBaslatiliyor" class="fas fa-spinner fa-spin mr-2" />
                   <i v-else class="fas fa-lock mr-2" />
                   {{ odemeBaslatiliyor ? 'Yönlendiriliyor...' : `${paraFormat(hesap.kalanTutar)} Öde` }}
                 </button>
-                <p class="text-[11px] text-pearl-50 text-center">Ödeme güvenli sayfada tamamlanır. Kart bilgileriniz işletmeyle paylaşılmaz.</p>
+                <p class="text-[11px] text-cream/45 text-center">Ödeme güvenli sayfada tamamlanır. Kart bilgileriniz işletmeyle paylaşılmaz.</p>
               </div>
             </div>
 
-            <div v-else class="surface-elevated p-6 text-center text-emerald-600 shadow-glass">
+            <div v-else class="lux-card p-6 text-center text-emerald-400">
               <i class="fas fa-circle-check text-3xl mb-2 block" />
               <p class="font-semibold">Hesabınız tamamen ödendi. Teşekkürler!</p>
             </div>
 
-            <button @click="hesapYukle" class="w-full text-sm text-pearl-60 hover:text-gold-primary py-2 font-medium">
+            <button @click="hesapYukle" class="w-full text-sm text-cream/55 hover:text-gold-bright py-2 font-medium">
               <i class="fas fa-rotate mr-1.5" />Hesabı Yenile
             </button>
           </template>
         </template>
       </div>
 
-      <!-- ═══════ Alt Sepet Butonu (yüzen) ═══════ -->
+      <!-- ═══════ Alt Sepet Butonu ═══════ -->
       <Transition
         enter-active-class="transition duration-300" leave-active-class="transition duration-200"
         enter-from-class="translate-y-24 opacity-0" leave-to-class="translate-y-24 opacity-0"
@@ -627,12 +622,12 @@ async function odemeyiBaslat() {
           <div class="max-w-3xl mx-auto pointer-events-auto">
             <button
               @click="sepetAcik = true"
-              class="w-full bg-gold-gradient text-white py-4 px-5 rounded-2xl font-semibold shadow-gold-glow-strong hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-between"
+              class="w-full bg-gold-gradient text-[#1c150a] py-4 px-5 rounded-2xl font-semibold shadow-gold-glow-strong hover:scale-[1.02] active:scale-[0.98] transition flex items-center justify-between"
             >
               <span class="flex items-center gap-3">
-                <span class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-bold text-lg">{{ sepetAdet }}</span>
+                <span class="w-10 h-10 rounded-xl bg-black/15 flex items-center justify-center font-bold text-lg">{{ sepetAdet }}</span>
                 <span class="text-left leading-tight">
-                  <span class="block text-[11px] uppercase tracking-widest opacity-80">Sepeti Görüntüle</span>
+                  <span class="block text-[11px] uppercase tracking-widest opacity-70">Sepeti Görüntüle</span>
                   <span class="block text-sm">{{ sepetAdet }} ürün</span>
                 </span>
               </span>
@@ -644,3 +639,67 @@ async function odemeyiBaslat() {
     </template>
   </div>
 </template>
+
+<style scoped>
+/* QR menüye özel koyu "fine-dining" tema — admin panelinin açık temasından ayrışır */
+.qr-screen {
+  background:
+    radial-gradient(ellipse 90% 50% at 50% -8%, rgba(230, 196, 82, 0.16), transparent 60%),
+    radial-gradient(ellipse 70% 50% at 100% 102%, rgba(200, 154, 42, 0.10), transparent 55%),
+    linear-gradient(180deg, #181208 0%, #120d07 55%, #0d0a05 100%);
+  background-attachment: fixed;
+}
+
+.qr-header {
+  background: rgba(20, 15, 8, 0.82);
+  backdrop-filter: blur(16px);
+}
+
+.qr-sheet {
+  background: linear-gradient(180deg, #1d160c 0%, #15100a 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 -16px 48px -12px rgba(0, 0, 0, 0.6);
+}
+
+/* Cam kart — koyu zemin */
+.lux-card {
+  background: rgba(255, 255, 255, 0.045);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 1rem;
+  backdrop-filter: blur(8px);
+}
+
+/* Ürün kartı */
+.qr-prod {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.3s, box-shadow 0.3s;
+}
+.qr-prod:hover {
+  transform: translateY(-4px);
+  border-color: rgba(230, 196, 82, 0.45);
+  box-shadow: 0 18px 40px -16px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(230, 196, 82, 0.15) inset;
+}
+
+/* Altın gradyan başlık (koyu zeminde parlak uçlar) */
+.gold-grad {
+  background: linear-gradient(135deg, #f6dd86 0%, #e6c452 45%, #c89a2a 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Koyu temaya uygun input */
+.lux-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.85rem;
+  padding: 0.72rem 1rem;
+  color: #f4ead6;
+  transition: border-color 0.2s;
+}
+.lux-input::placeholder { color: rgba(244, 234, 214, 0.4); }
+.lux-input:focus { outline: none; border-color: rgba(230, 196, 82, 0.6); }
+</style>

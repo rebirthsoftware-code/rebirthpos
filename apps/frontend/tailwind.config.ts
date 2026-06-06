@@ -64,6 +64,9 @@ export default {
           border: 'rgba(28,28,32,0.10)',
           hover: 'rgba(200,154,42,0.08)',
         },
+        // QR müşteri menüsünün koyu temasındaki sıcak krem metin rengi
+        // (opaklık varyantları için tek hex — text-cream/55 vb. çalışır).
+        cream: '#f4ead6',
       },
       backgroundImage: {
         'gold-gradient': 'linear-gradient(135deg, #e6c452 0%, #c89a2a 50%, #a07a1f 100%)',

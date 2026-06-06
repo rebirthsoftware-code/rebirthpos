@@ -5,6 +5,7 @@ import { ConfigService } from '@nestjs/config';
 import helmet from 'helmet';
 import express from 'express';
 import { AppModule } from './app.module';
+import { PrismaExceptionFilter } from './common/prisma-exception.filter';
 
 let cached: express.Express | null = null;
 
@@ -36,6 +37,8 @@ export async function createServer(): Promise<express.Express> {
   app.useGlobalPipes(
     new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
   );
+  // Prisma hatalarını jenerik 500 yerine anlamlı mesaja çevir (şema kayması teşhisi dahil).
+  app.useGlobalFilters(new PrismaExceptionFilter());
 
   const corsRaw = config.get<string>('CORS_ORIGIN', '*');
   const corsOrigins = corsRaw.split(',').map((o) => o.trim()).filter(Boolean);

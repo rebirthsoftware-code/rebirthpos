@@ -11,7 +11,7 @@ export class OdenenKalemDto {
 export class OdemeOlusturDto {
   @IsString() adisyonId!: string;
 
-  @IsIn(['NAKIT', 'KREDI_KARTI', 'YEMEKSEPETI', 'TICKET'])
+  @IsIn(['NAKIT', 'KREDI_KARTI', 'SANAL_POS', 'YEMEKSEPETI', 'TICKET'])
   tip!: string;
 
   @Type(() => Number) @IsNumber() @Min(0.01) tutar!: number;

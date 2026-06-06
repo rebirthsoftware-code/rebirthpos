@@ -25,7 +25,25 @@ interface Menu {
   urunler: Urun[];
 }
 
+interface HesapKalem { ad: string; adet: number; birimFiyat: number; toplam: number }
+interface Hesap {
+  bos: boolean;
+  masa: { id: string; ad: string };
+  sube: { id: string; ad: string };
+  firma: { ad: string; paraBirimi: string };
+  adisyonId?: string;
+  numara?: string;
+  durum?: string;
+  kalemler?: HesapKalem[];
+  araToplam?: number;
+  kdvTutar?: number;
+  toplamTutar?: number;
+  odenenTutar?: number;
+  kalanTutar?: number;
+}
+
 const route = useRoute();
+const router = useRouter();
 const subeId = route.params.subeId as string;
 const masaId = (route.query.masa as string) || '';
 
@@ -41,6 +59,9 @@ const sepet = ref<Array<{ urun: Urun; adet: number; not: string }>>([]);
 const musteriAd = ref('');
 const musteriTel = ref('');
 const siparisNot = ref('');
+
+// Görünüm: 'menu' (sipariş) | 'hesap' (masadan ödeme). Masa varsa hesap sekmesi açılır.
+const gorunum = ref<'menu' | 'hesap'>('menu');
 
 async function yukle() {
   yukleniyor.value = true;
@@ -66,7 +87,20 @@ async function yukle() {
   }
 }
 
-onMounted(() => yukle());
+onMounted(() => {
+  yukle();
+  // Ödeme sayfasından dönüş — sonuç bildir, URL'i temizle
+  const sonuc = route.query.odeme as string | undefined;
+  if (sonuc === 'basarili') {
+    odemeSonucMesaji.value = { basarili: true, metin: 'Ödemeniz başarıyla alındı. Teşekkürler!' };
+    gorunum.value = 'hesap';
+    hesapYukle();
+  } else if (sonuc === 'basarisiz') {
+    odemeSonucMesaji.value = { basarili: false, metin: 'Ödeme tamamlanamadı. Tekrar deneyebilirsiniz.' };
+    gorunum.value = 'hesap';
+  }
+  if (sonuc) router.replace({ query: { ...route.query, odeme: undefined } });
+});
 
 const filtreli = computed(() => {
   if (!menu.value) return [];
@@ -129,10 +163,92 @@ async function siparisGonder() {
     basariMesaji.value = yanit;
     sepet.value = [];
     sepetAcik.value = false;
+    // Sipariş sonrası masa hesabı değişir
+    if (masaId) hesapYukle();
   } catch (e: any) {
     useToastStore().hata(e?.data?.message || 'Sipariş gönderilemedi');
   } finally {
     gonderiliyor.value = false;
+  }
+}
+
+// ───────────────────────── MASADAN ÖDEME (PayTR Sanal POS) ─────────────────────────
+
+const hesap = ref<Hesap | null>(null);
+const hesapYukleniyor = ref(false);
+const odemeSonucMesaji = ref<{ basarili: boolean; metin: string } | null>(null);
+
+// Ödeme formu
+const odemeAcik = ref(false);
+const odemeAd = ref('');
+const odemeEposta = ref('');
+const odemeBaslatiliyor = ref(false);
+
+async function hesapYukle() {
+  if (!masaId) return;
+  hesapYukleniyor.value = true;
+  try {
+    const config = useRuntimeConfig();
+    hesap.value = await $fetch<Hesap>(`/qr/masa/${masaId}/hesap`, {
+      baseURL: config.public.apiBase,
+    });
+  } catch (e: any) {
+    useToastStore().hata(e?.data?.message || 'Hesap yüklenemedi');
+  } finally {
+    hesapYukleniyor.value = false;
+  }
+}
+
+function hesabaGec() {
+  gorunum.value = 'hesap';
+  if (!hesap.value) hesapYukle();
+}
+
+async function odemeyiBaslat() {
+  if (!hesap.value?.adisyonId || !hesap.value.kalanTutar) return;
+  odemeBaslatiliyor.value = true;
+  try {
+    const config = useRuntimeConfig();
+    const yanit = await $fetch<{ token: string; saglayici: string; testMod: string | null; odemeUrl: string | null; tutar: number }>(
+      '/qr/odeme/baslat',
+      {
+        baseURL: config.public.apiBase,
+        method: 'POST',
+        body: {
+          subeId,
+          adisyonId: hesap.value.adisyonId,
+          tutar: hesap.value.kalanTutar,
+          musteriAd: odemeAd.value.trim() || undefined,
+          musteriEposta: odemeEposta.value.trim() || undefined,
+        },
+      },
+    );
+
+    // Gerçek PayTR ise iframe URL'i döner → oraya git. MOCK ise kendi test sayfamız.
+    if (yanit.odemeUrl) {
+      window.location.href = yanit.odemeUrl;
+      return;
+    }
+    await navigateTo({
+      path: '/qr/odeme-test',
+      query: {
+        token: yanit.token,
+        subeId,
+        masa: masaId,
+        adisyonId: hesap.value.adisyonId,
+        tutar: String(yanit.tutar),
+        ad: odemeAd.value.trim() || undefined,
+        firma: hesap.value.firma.ad,
+        sube: hesap.value.sube.ad,
+        masaAd: hesap.value.masa.ad,
+        testMod: yanit.testMod || undefined,
+        saglayici: yanit.saglayici,
+      },
+    });
+  } catch (e: any) {
+    useToastStore().hata(e?.data?.message || 'Ödeme başlatılamadı');
+  } finally {
+    odemeBaslatiliyor.value = false;
   }
 }
 </script>
@@ -157,7 +273,7 @@ async function siparisGonder() {
     </div>
 
     <template v-else-if="menu">
-      <!-- Başarı modali -->
+      <!-- Sipariş başarı modali -->
       <Transition
         enter-active-class="transition duration-300"
         leave-active-class="transition duration-200"
@@ -173,7 +289,28 @@ async function siparisGonder() {
             <p class="text-pearl-60 text-sm mb-4">Birazdan hazırlanıp masanıza gelecek.</p>
             <div class="text-xs text-pearl-50 mb-1">Sipariş No</div>
             <div class="text-2xl font-bold gold-text mb-6">{{ basariMesaji.numara }}</div>
-            <button @click="basariMesaji = null" class="btn-gold !w-full">Yeni Sipariş Ver</button>
+            <button @click="basariMesaji = null" class="btn-gold !w-full">Devam Et</button>
+          </div>
+        </div>
+      </Transition>
+
+      <!-- Ödeme sonuç modali -->
+      <Transition
+        enter-active-class="transition duration-300"
+        leave-active-class="transition duration-200"
+        enter-from-class="opacity-0"
+        leave-to-class="opacity-0"
+      >
+        <div v-if="odemeSonucMesaji" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-6">
+          <div class="glass-card p-8 max-w-sm w-full text-center">
+            <div :class="['text-6xl mb-4', odemeSonucMesaji.basarili ? 'text-emerald-400' : 'text-red-400']">
+              <i :class="['fas', odemeSonucMesaji.basarili ? 'fa-circle-check' : 'fa-circle-xmark']" />
+            </div>
+            <h2 class="text-xl font-bold gold-text mb-2">
+              {{ odemeSonucMesaji.basarili ? 'Ödeme Başarılı' : 'Ödeme Başarısız' }}
+            </h2>
+            <p class="text-pearl-60 text-sm mb-6">{{ odemeSonucMesaji.metin }}</p>
+            <button @click="odemeSonucMesaji = null" class="btn-gold !w-full">Tamam</button>
           </div>
         </div>
       </Transition>
@@ -267,9 +404,26 @@ async function siparisGonder() {
             </div>
           </div>
         </div>
+
+        <!-- Menü / Hesap sekmesi — sadece masadan girişte -->
+        <div v-if="masaId" class="max-w-3xl mx-auto mt-3 grid grid-cols-2 gap-1 p-1 rounded-2xl bg-bg-dark/60 border border-glass-border">
+          <button
+            @click="gorunum = 'menu'"
+            :class="['py-2 rounded-xl text-sm font-medium transition', gorunum === 'menu' ? 'bg-gold-gradient text-bg-dark' : 'text-pearl-60']"
+          >
+            <i class="fas fa-utensils mr-1.5" />Menü
+          </button>
+          <button
+            @click="hesabaGec"
+            :class="['py-2 rounded-xl text-sm font-medium transition', gorunum === 'hesap' ? 'bg-gold-gradient text-bg-dark' : 'text-pearl-60']"
+          >
+            <i class="fas fa-receipt mr-1.5" />Hesabım / Öde
+          </button>
+        </div>
       </header>
 
-      <div class="max-w-3xl mx-auto p-4 space-y-5">
+      <!-- ─────────────── MENÜ GÖRÜNÜMÜ ─────────────── -->
+      <div v-show="gorunum === 'menu'" class="max-w-3xl mx-auto p-4 space-y-5">
         <!-- Arama -->
         <div class="relative">
           <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-pearl-50" />
@@ -334,14 +488,108 @@ async function siparisGonder() {
         </div>
       </div>
 
-      <!-- Alt Sepet Butonu -->
+      <!-- ─────────────── HESAP / ÖDEME GÖRÜNÜMÜ ─────────────── -->
+      <div v-show="gorunum === 'hesap' && masaId" class="max-w-3xl mx-auto p-4 space-y-4">
+        <div v-if="hesapYukleniyor" class="glass-card p-10 text-center">
+          <i class="fas fa-spinner fa-spin text-3xl text-gold-primary" />
+        </div>
+
+        <template v-else-if="hesap">
+          <!-- Açık hesap yok -->
+          <div v-if="hesap.bos" class="glass-card p-8 text-center text-pearl-50">
+            <i class="fas fa-receipt text-3xl text-gold-primary/30 mb-3 block" />
+            <p class="mb-1 text-pearl-70">Bu masada henüz açık hesap yok.</p>
+            <p class="text-sm">Menüden sipariş verdiğinizde hesabınız burada görünecek.</p>
+          </div>
+
+          <template v-else>
+            <!-- Hesap dökümü -->
+            <div class="glass-card overflow-hidden">
+              <div class="p-4 border-b border-glass-border flex items-center justify-between">
+                <div>
+                  <div class="text-xs text-pearl-50 uppercase tracking-wider">Hesap No</div>
+                  <div class="font-bold gold-text">{{ hesap.numara }}</div>
+                </div>
+                <div class="text-right">
+                  <div class="text-xs text-pearl-50 uppercase tracking-wider">Masa</div>
+                  <div class="font-semibold">{{ hesap.masa.ad }}</div>
+                </div>
+              </div>
+
+              <div class="p-4 space-y-2">
+                <div v-for="(k, i) in hesap.kalemler" :key="i" class="flex items-center gap-3 text-sm">
+                  <span class="w-7 h-7 shrink-0 rounded-lg bg-bg-dark/50 flex items-center justify-center text-gold-primary text-xs font-bold">
+                    {{ k.adet }}
+                  </span>
+                  <span class="flex-1 min-w-0 truncate">{{ k.ad }}</span>
+                  <span class="text-pearl-60 text-xs">{{ paraFormat(k.birimFiyat) }}</span>
+                  <span class="font-semibold w-20 text-right">{{ paraFormat(k.toplam) }}</span>
+                </div>
+              </div>
+
+              <div class="p-4 border-t border-glass-border space-y-1.5 text-sm">
+                <div class="flex justify-between text-pearl-60">
+                  <span>Ara Toplam</span><span>{{ paraFormat(hesap.araToplam) }}</span>
+                </div>
+                <div class="flex justify-between text-pearl-60">
+                  <span>KDV</span><span>{{ paraFormat(hesap.kdvTutar) }}</span>
+                </div>
+                <div class="flex justify-between font-bold text-base pt-1">
+                  <span>Toplam</span><span class="gold-text">{{ paraFormat(hesap.toplamTutar) }}</span>
+                </div>
+                <div v-if="(hesap.odenenTutar || 0) > 0" class="flex justify-between text-emerald-400 text-xs">
+                  <span>Ödenen</span><span>− {{ paraFormat(hesap.odenenTutar) }}</span>
+                </div>
+                <div class="flex justify-between font-bold text-lg pt-1 border-t border-glass-border mt-1">
+                  <span>Kalan</span><span class="gold-text">{{ paraFormat(hesap.kalanTutar) }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Ödeme kutusu -->
+            <div v-if="(hesap.kalanTutar || 0) > 0" class="glass-card p-4 space-y-3">
+              <div class="flex items-center gap-2 text-sm text-pearl-70">
+                <i class="fas fa-lock text-gold-primary" />
+                <span>Güvenli online ödeme — <b class="text-pearl-90">PayTR Sanal POS</b></span>
+              </div>
+              <button @click="odemeAcik = !odemeAcik" v-if="!odemeAcik" class="btn-gold w-full">
+                <i class="fas fa-credit-card mr-2" />Kartla Öde · {{ paraFormat(hesap.kalanTutar) }}
+              </button>
+
+              <div v-if="odemeAcik" class="space-y-3">
+                <input v-model="odemeAd" class="input-base" placeholder="Ad Soyad (fiş için, opsiyonel)" />
+                <input v-model="odemeEposta" type="email" class="input-base" placeholder="E-posta (fiş için, opsiyonel)" />
+                <button @click="odemeyiBaslat" :disabled="odemeBaslatiliyor" class="btn-gold w-full">
+                  <i v-if="odemeBaslatiliyor" class="fas fa-spinner fa-spin mr-2" />
+                  <i v-else class="fas fa-credit-card mr-2" />
+                  {{ odemeBaslatiliyor ? 'Yönlendiriliyor...' : `${paraFormat(hesap.kalanTutar)} Öde` }}
+                </button>
+                <p class="text-[11px] text-pearl-50 text-center">
+                  Ödeme güvenli sayfada tamamlanır. Kart bilgileriniz işletme ile paylaşılmaz.
+                </p>
+              </div>
+            </div>
+
+            <div v-else class="glass-card p-6 text-center text-emerald-400">
+              <i class="fas fa-circle-check text-3xl mb-2 block" />
+              <p class="font-semibold">Hesabınız tamamen ödendi. Teşekkürler!</p>
+            </div>
+
+            <button @click="hesapYukle" class="w-full text-sm text-pearl-60 hover:text-gold-primary py-2">
+              <i class="fas fa-rotate mr-1.5" />Hesabı Yenile
+            </button>
+          </template>
+        </template>
+      </div>
+
+      <!-- Alt Sepet Butonu — sadece menü görünümünde -->
       <Transition
         enter-active-class="transition duration-200"
         leave-active-class="transition duration-200"
         enter-from-class="translate-y-full opacity-0"
         leave-to-class="translate-y-full opacity-0"
       >
-        <div v-if="sepet.length" class="fixed bottom-0 left-0 right-0 p-4 z-30 pointer-events-none">
+        <div v-if="sepet.length && gorunum === 'menu'" class="fixed bottom-0 left-0 right-0 p-4 z-30 pointer-events-none">
           <div class="max-w-3xl mx-auto pointer-events-auto">
             <button
               @click="sepetAcik = true"

@@ -41,6 +41,8 @@ export type SiparisDurum = (typeof SiparisDurum)[keyof typeof SiparisDurum];
 export const OdemeTipi = {
   NAKIT: 'NAKIT',
   KREDI_KARTI: 'KREDI_KARTI',
+  // SANAL_POS: QR menüden PayTR sanal pos ile alınan online kart ödemesi.
+  SANAL_POS: 'SANAL_POS',
   YEMEKSEPETI: 'YEMEKSEPETI',
   TICKET: 'TICKET',
 } as const;

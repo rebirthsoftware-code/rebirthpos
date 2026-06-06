@@ -326,7 +326,8 @@ model SiparisKalem {
 
 // ─────────────────────────────────────────────────────────────
 // ÖDEME
-// odeme.tip: NAKIT | KREDI_KARTI | BANKA_KARTI | HAVALE | YEMEKSEPETI | TICKET | DIGER
+// odeme.tip: NAKIT | KREDI_KARTI | SANAL_POS | BANKA_KARTI | HAVALE | YEMEKSEPETI | TICKET | DIGER
+//   SANAL_POS: QR menüden PayTR sanal pos ile alınan online kart ödemesi (kartMeta'da işlemNo/token).
 // ─────────────────────────────────────────────────────────────
 
 model Odeme {

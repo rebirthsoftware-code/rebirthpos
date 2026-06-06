@@ -34,6 +34,9 @@
 - ✅ WebSocket Gateway (Socket.IO), şube odası yayını
 - ✅ Mutfak ekranı (KDS): 3 sütun (Yeni/Hazırlanıyor/Hazır), bip sesi, drag animasyonu
 - ✅ Public QR menü (`/qr/[subeId]`), mobil-first, sepet drawer
+- ✅ **QR'dan masadan online ödeme (PayTR Sanal POS)**: müşteri masadaki açık hesabını görür (`GET /qr/masa/:id/hesap`) ve kartıyla öder (`POST /qr/odeme/baslat` → `POST /qr/odeme/sonuc`). QR menüye "Menü / Hesabım-Öde" sekmesi eklendi. Ödeme tipi `SANAL_POS`.
+  - PayTR adapter mimarisi `pos-kart` ile aynı desende: `src/paytr/` (types + mock adapter + service + module), `PAYTR_MARKA` env ile seçilir. Entegre bilgileri (merchant_id/key/salt) gelene kadar **MOCK** çalışır; gerçek adapter eklenince akış değişmez.
+  - Test ödeme sayfası: `/qr/odeme-test` (simüle 3D-secure ekranı). Cihaz Test Paneli'ne "Sanal POS" sekmesi + mock kontrolü eklendi.
 - ✅ Tüm sayfalarda anlık güncelleme (siparis/adisyon/odeme/masa olayları)
 
 ### Faz 4 — Tam Yönetim

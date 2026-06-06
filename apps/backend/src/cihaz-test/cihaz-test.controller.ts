@@ -13,6 +13,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { YONETICI_ROLLER, AdisyonDurum, MasaDurum } from '../common/enums';
 import { MockOkcAdapter } from '../okc/mock.adapter';
 import { MockPosKartAdapter } from '../pos-kart/mock.adapter';
+import { MockPaytrAdapter } from '../paytr/mock.adapter';
 import { OkcFisIstegi, OkcKalem, OkcOdeme, OkcKdvSatiri } from '../okc/okc.types';
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -90,6 +91,12 @@ export class CihazTestController {
         gecikmeMs: MockOkcAdapter.gecikmeMs,
         logSayisi: MockOkcAdapter.log.length,
       },
+      paytr: {
+        saglayici: 'MOCK',
+        testMod: MockPaytrAdapter.testMod,
+        gecikmeMs: MockPaytrAdapter.gecikmeMs,
+        logSayisi: MockPaytrAdapter.log.length,
+      },
     };
   }
 
@@ -101,6 +108,11 @@ export class CihazTestController {
   @Get('log/okc')
   okcLog() {
     return MockOkcAdapter.log;
+  }
+
+  @Get('log/paytr')
+  paytrLog() {
+    return MockPaytrAdapter.log;
   }
 
   @Post('kart/ayar')
@@ -117,10 +129,18 @@ export class CihazTestController {
     return { ok: true, testMod: MockOkcAdapter.testMod, gecikmeMs: MockOkcAdapter.gecikmeMs };
   }
 
+  @Post('paytr/ayar')
+  paytrAyar(@Body() dto: TestAyarDto) {
+    if (dto.testMod !== undefined) MockPaytrAdapter.testMod = dto.testMod;
+    if (dto.gecikmeMs !== undefined) MockPaytrAdapter.gecikmeMs = dto.gecikmeMs;
+    return { ok: true, testMod: MockPaytrAdapter.testMod, gecikmeMs: MockPaytrAdapter.gecikmeMs };
+  }
+
   @Post('log/temizle')
   logTemizle() {
     MockPosKartAdapter.log.length = 0;
     MockOkcAdapter.log.length = 0;
+    MockPaytrAdapter.log.length = 0;
     return { ok: true };
   }
 
@@ -141,6 +161,7 @@ export class CihazTestController {
     MockOkcAdapter.iadeSayac = 0;
     MockOkcAdapter.sonZTarihi = null;
     MockPosKartAdapter.log.length = 0;
+    MockPaytrAdapter.log.length = 0;
 
     // 2) DB temizliği — adisyonlar IPTAL, ödemeler iptal
     const sonuc = await this.prisma.$transaction(async (tx) => {
@@ -261,6 +282,26 @@ export class CihazTestController {
   async sentetikKart(@Body() dto: SentetikKartDto) {
     const adapter = new MockPosKartAdapter();
     return adapter.cek({ tutar: dto.tutar, referans: dto.referans });
+  }
+
+  /**
+   * Mock PayTR sanal pos akışını uçtan uca dener (başlat → sonuç). DB'ye yazmaz —
+   * sadece adapter davranışını ve log'u test eder.
+   */
+  @Post('sentetik/paytr')
+  async sentetikPaytr(@Body() dto: SentetikKartDto) {
+    const adapter = new MockPaytrAdapter();
+    const siparisNo = dto.referans || `TEST-${Date.now().toString().slice(-8)}`;
+    const baslat = await adapter.odemeBaslat({
+      tutar: dto.tutar,
+      adisyonId: 'sentetik',
+      subeId: 'sentetik',
+      siparisNo,
+      musteriAd: 'Test Müşteri',
+    });
+    if (!baslat.basarili || !baslat.token) return { baslat };
+    const sonuc = await adapter.sonucDogrula({ token: baslat.token, basariliMi: true });
+    return { baslat, sonuc };
   }
 
   /** Mock ÖKC adapter'ına doğrudan tek bir fiş gönderir (DB'ye yazılmaz). */

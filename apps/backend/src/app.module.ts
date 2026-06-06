@@ -23,6 +23,7 @@ import { RaporlarModule } from './raporlar/raporlar.module';
 import { DenetimModule } from './denetim/denetim.module';
 import { OkcModule } from './okc/okc.module';
 import { PosKartModule } from './pos-kart/pos-kart.module';
+import { PaytrModule } from './paytr/paytr.module';
 import { CihazTestModule } from './cihaz-test/cihaz-test.module';
 import { EBelgeModule } from './e-belge/e-belge.module';
 import { HealthController } from './health.controller';
@@ -60,6 +61,7 @@ import { HealthController } from './health.controller';
     DenetimModule,
     OkcModule,
     PosKartModule,
+    PaytrModule,
     CihazTestModule,
     EBelgeModule,
   ],

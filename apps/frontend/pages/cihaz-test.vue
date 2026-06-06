@@ -8,6 +8,20 @@ type TestMod = 'AUTO' | 'BASARI' | 'HATA';
 interface CihazDurum {
   kart: { marka: string; testMod: TestMod; gecikmeMs: number; logSayisi: number };
   okc: { marka: string; testMod: TestMod; gecikmeMs: number; logSayisi: number };
+  paytr: { saglayici: string; testMod: TestMod; gecikmeMs: number; logSayisi: number };
+}
+
+interface PaytrLog {
+  zaman: string;
+  islem: 'BASLAT' | 'SONUC';
+  basarili: boolean;
+  tutar?: number;
+  token?: string;
+  siparisNo?: string;
+  islemNo?: string;
+  musteriAd?: string;
+  sureMs: number;
+  hata?: string;
 }
 
 interface KartLog {
@@ -73,10 +87,11 @@ interface OkcRapor {
 const durum = ref<CihazDurum | null>(null);
 const kartLog = ref<KartLog[]>([]);
 const okcLog = ref<OkcLog[]>([]);
+const paytrLog = ref<PaytrLog[]>([]);
 const aktifRapor = ref<OkcRapor | null>(null);
 const uyum = ref<UyumKarsilastirma | null>(null);
 const toast = useToastStore();
-const aktifSekme = ref<'kart' | 'okc'>('kart');
+const aktifSekme = ref<'kart' | 'okc' | 'paytr'>('kart');
 const acikSatir = ref<string | null>(null);
 
 const sonKartIslem = computed<KartLog | null>(() => kartLog.value[0] || null);
@@ -88,10 +103,11 @@ const sonOkcId = ref<string>('');
 
 async function yukle() {
   try {
-    const [d, k, o, u] = await Promise.all([
+    const [d, k, o, p, u] = await Promise.all([
       apiFetch<CihazDurum>('/cihaz-test/durum'),
       apiFetch<KartLog[]>('/cihaz-test/log/kart'),
       apiFetch<OkcLog[]>('/cihaz-test/log/okc'),
+      apiFetch<PaytrLog[]>('/cihaz-test/log/paytr'),
       apiFetch<UyumKarsilastirma>('/cihaz-test/karsilastirma'),
     ]);
     durum.value = d;
@@ -99,6 +115,7 @@ async function yukle() {
     if (o[0] && o[0].zaman !== sonOkcId.value) sonOkcId.value = o[0].zaman;
     kartLog.value = k;
     okcLog.value = o;
+    paytrLog.value = p;
     uyum.value = u;
   } catch (e: any) {
     // Sessizce yut — polling devam etsin
@@ -153,6 +170,14 @@ async function okcGecikme(ms: number) {
   await apiFetch('/cihaz-test/okc/ayar', { method: 'POST', body: { gecikmeMs: ms } });
   await yukle();
 }
+async function paytrTestMod(mod: TestMod) {
+  await apiFetch('/cihaz-test/paytr/ayar', { method: 'POST', body: { testMod: mod } });
+  await yukle();
+}
+async function paytrGecikme(ms: number) {
+  await apiFetch('/cihaz-test/paytr/ayar', { method: 'POST', body: { gecikmeMs: ms } });
+  await yukle();
+}
 async function logTemizle() {
   await apiFetch('/cihaz-test/log/temizle', { method: 'POST' });
   await yukle();
@@ -191,6 +216,23 @@ async function manuelKartCek() {
     await yukle();
   } catch (e: any) {
     toast.hata(e?.data?.message || 'Kart çekimi başarısız');
+  } finally {
+    yapiyor.value = '';
+  }
+}
+
+async function sentetikPaytr() {
+  if (yapiyor.value) return;
+  yapiyor.value = 'paytr' as any;
+  try {
+    await apiFetch('/cihaz-test/sentetik/paytr', {
+      method: 'POST',
+      body: { tutar: manTutar.value, referans: 'MANUEL-TEST' },
+    });
+    await yukle();
+    aktifSekme.value = 'paytr';
+  } catch (e: any) {
+    toast.hata(e?.data?.message || 'Sanal POS testi başarısız');
   } finally {
     yapiyor.value = '';
   }
@@ -277,6 +319,12 @@ const okcMetrik = computed(() => {
   const total = okcLog.value.length;
   const basarili = okcLog.value.filter((l) => l.basarili).length;
   const ortSure = total ? Math.round(okcLog.value.reduce((s, l) => s + (l.sureMs || 0), 0) / total) : 0;
+  return { total, basarili, basarisiz: total - basarili, oran: total ? Math.round((basarili * 100) / total) : 0, ortSure };
+});
+const paytrMetrik = computed(() => {
+  const total = paytrLog.value.length;
+  const basarili = paytrLog.value.filter((l) => l.basarili).length;
+  const ortSure = total ? Math.round(paytrLog.value.reduce((s, l) => s + (l.sureMs || 0), 0) / total) : 0;
   return { total, basarili, basarisiz: total - basarili, oran: total ? Math.round((basarili * 100) / total) : 0, ortSure };
 });
 
@@ -366,6 +414,19 @@ const modlar: { kod: TestMod; ad: string; ikon: string }[] = [
             <span class="text-pearl-70">{{ okcMetrik.oran }}%</span>
             <span class="text-pearl-50">·</span>
             <span class="text-pearl-70">{{ okcMetrik.ortSure }}ms</span>
+          </div>
+        </div>
+        <div class="w-px h-8 bg-pearl-10" />
+        <div class="text-center">
+          <div class="text-[10px] uppercase tracking-extra-wide text-pearl-50 font-semibold mb-0.5">Sanal POS</div>
+          <div class="flex items-center gap-2 tabular">
+            <span class="text-pearl font-semibold">{{ paytrMetrik.total }}</span>
+            <span class="text-emerald-600">✓{{ paytrMetrik.basarili }}</span>
+            <span class="text-red-600">✗{{ paytrMetrik.basarisiz }}</span>
+            <span class="text-pearl-50">·</span>
+            <span class="text-pearl-70">{{ paytrMetrik.oran }}%</span>
+            <span class="text-pearl-50">·</span>
+            <span class="text-pearl-70">{{ paytrMetrik.ortSure }}ms</span>
           </div>
         </div>
         <div class="w-px h-8 bg-pearl-10" />
@@ -567,6 +628,53 @@ const modlar: { kod: TestMod; ad: string; ikon: string }[] = [
             </div>
           </div>
         </div>
+
+        <!-- PAYTR SANAL POS (QR masadan ödeme) -->
+        <div class="surface-elevated overflow-hidden">
+          <div class="bg-gradient-to-br from-[#1b2a4a] via-[#16223c] to-[#1b2a4a] p-4 relative border-b-2 border-pearl-20">
+            <div class="text-center text-[10px] uppercase tracking-extra-wide text-pearl-50 font-bold mb-2">
+              <i class="fas fa-mobile-screen-button mr-1.5" />PAYTR SANAL POS · MOCK
+            </div>
+            <!-- Sanal ekran -->
+            <div class="rounded-xl px-3 py-3 mb-2 text-center font-mono border-2 bg-[#0e1830] border-white/10 text-pearl-30">
+              <div class="text-[10px] uppercase tracking-widest text-pearl-50 mb-1">QR → Masadan Online Ödeme</div>
+              <div class="text-sm font-bold text-emerald-400 tracking-wider">
+                <i class="fas fa-shield-halved mr-1" />3D SECURE
+              </div>
+              <div class="text-[10px] text-pearl-50 mt-1">Entegre bilgileri bekleniyor — test modu aktif</div>
+            </div>
+          </div>
+          <!-- PayTR kontrol -->
+          <div class="p-3">
+            <div class="text-[10px] uppercase tracking-extra-wide text-pearl-50 mb-2 font-semibold flex items-center justify-between">
+              <span>Test Modu</span>
+              <span class="text-pearl-70">Gecikme: <span class="tabular text-gold-dark">{{ durum?.paytr.gecikmeMs ?? 0 }}ms</span></span>
+            </div>
+            <div class="grid grid-cols-3 gap-1 mb-2">
+              <button
+                v-for="m in modlar"
+                :key="m.kod"
+                @click="paytrTestMod(m.kod)"
+                :class="[
+                  'p-1.5 rounded-md border-2 transition text-center text-[10px] font-medium no-tap-highlight',
+                  durum?.paytr.testMod === m.kod
+                    ? m.kod === 'BASARI' ? 'bg-emerald-500/10 border-emerald-500/50 text-emerald-700'
+                      : m.kod === 'HATA' ? 'bg-red-500/10 border-red-500/50 text-red-600'
+                        : 'bg-gold-soft border-gold-primary/40 text-gold-dark'
+                    : 'border-pearl-10 text-pearl-60 hover:border-pearl-30',
+                ]"
+              >
+                <i :class="['fas', m.ikon, 'mr-1']" />{{ m.ad }}
+              </button>
+            </div>
+            <div class="grid grid-cols-4 gap-1">
+              <button v-for="g in [0, 800, 1500, 3000]" :key="g"
+                @click="paytrGecikme(g)"
+                :class="['py-1 rounded text-[10px] font-medium border transition tabular', durum?.paytr.gecikmeMs === g ? 'bg-gold-soft border-gold-primary/40 text-gold-dark' : 'border-pearl-10 text-pearl-60']"
+              >{{ g }}ms</button>
+            </div>
+          </div>
+        </div>
       </aside>
 
       <!-- ◇ ORTA: LOG TABLOLARI (sekmeli) -->
@@ -586,6 +694,13 @@ const modlar: { kod: TestMod; ad: string; ikon: string }[] = [
           >
             <i class="fas fa-receipt" />ÖKC Fişleri
             <span class="badge-gold !text-[9px] !py-0.5 !px-1.5 tabular">{{ okcLog.length }}</span>
+          </button>
+          <button
+            @click="aktifSekme = 'paytr'"
+            :class="['flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium border-b-2 transition', aktifSekme === 'paytr' ? 'bg-white text-pearl border-gold-primary' : 'text-pearl-60 border-transparent hover:text-pearl']"
+          >
+            <i class="fas fa-mobile-screen-button" />Sanal POS
+            <span class="badge-gold !text-[9px] !py-0.5 !px-1.5 tabular">{{ paytrLog.length }}</span>
           </button>
           <div class="ml-auto text-[10px] text-pearl-50 flex items-center gap-1.5">
             <span class="status-dot-gold" />Canlı (1.5sn)
@@ -765,6 +880,63 @@ const modlar: { kod: TestMod; ad: string; ikon: string }[] = [
             </table>
           </div>
         </div>
+
+        <!-- PAYTR SANAL POS LOG TABLOSU -->
+        <div v-if="aktifSekme === 'paytr'" class="surface-elevated flex-1 min-h-0 flex flex-col overflow-hidden">
+          <div v-if="!paytrLog.length" class="flex-1 flex items-center justify-center text-pearl-50 text-sm">
+            <div class="text-center">
+              <i class="fas fa-inbox text-3xl text-pearl-40 mb-2 block" />
+              Sanal POS işlemi yok — sağdaki "Sanal POS Test" ile veya QR menüden masa ödemesiyle test edin
+            </div>
+          </div>
+          <div v-else class="flex-1 min-h-0 overflow-y-auto">
+            <table class="w-full text-xs">
+              <thead class="sticky top-0 bg-white z-10">
+                <tr class="text-[10px] uppercase tracking-wider text-pearl-50 border-b border-pearl-10">
+                  <th class="text-left py-2.5 px-3 font-semibold">Saat</th>
+                  <th class="text-left py-2.5 px-3 font-semibold">Adım</th>
+                  <th class="text-right py-2.5 px-3 font-semibold">Tutar</th>
+                  <th class="text-left py-2.5 px-3 font-semibold">Sipariş / Müşteri</th>
+                  <th class="text-left py-2.5 px-3 font-semibold">Token / İşlem No</th>
+                  <th class="text-right py-2.5 px-3 font-semibold">Süre</th>
+                  <th class="text-center py-2.5 px-3 font-semibold">Durum</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="(l, i) in paytrLog"
+                  :key="i"
+                  class="border-b border-pearl-5 hover:bg-pearl-5 transition"
+                >
+                  <td class="py-2 px-3 text-pearl-70 tabular">{{ zamanFmt(l.zaman) }}</td>
+                  <td class="py-2 px-3">
+                    <span :class="['badge !text-[9px] !py-0.5', l.islem === 'BASLAT' ? 'badge-info' : 'badge-gold']">
+                      {{ l.islem === 'BASLAT' ? 'Başlat' : 'Sonuç' }}
+                    </span>
+                  </td>
+                  <td class="py-2 px-3 text-right font-bold tabular">
+                    <span v-if="l.tutar">{{ paraFormat(l.tutar) }}</span>
+                    <span v-else class="text-pearl-40">—</span>
+                  </td>
+                  <td class="py-2 px-3 text-pearl-70">
+                    <div v-if="l.siparisNo" class="font-mono text-[11px]">{{ l.siparisNo }}</div>
+                    <div v-if="l.musteriAd" class="text-[10px] text-pearl-50">{{ l.musteriAd }}</div>
+                    <span v-if="!l.siparisNo && !l.musteriAd" class="text-pearl-40">—</span>
+                  </td>
+                  <td class="py-2 px-3 font-mono text-[11px]">
+                    <div v-if="l.islemNo" class="text-gold-dark">{{ l.islemNo }}</div>
+                    <div v-if="l.token" class="text-pearl-50 text-[10px] truncate max-w-[160px]">{{ l.token }}</div>
+                    <span v-if="l.hata" class="text-red-600">{{ l.hata }}</span>
+                  </td>
+                  <td class="py-2 px-3 text-right text-pearl-60 tabular">{{ l.sureMs }}ms</td>
+                  <td class="py-2 px-3 text-center">
+                    <i :class="['fas', l.basarili ? 'fa-check-circle text-emerald-600' : 'fa-times-circle text-red-600']" />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </main>
 
       <!-- ◇ SAĞ: MANUEL TEST + STRES TEST -->
@@ -813,6 +985,18 @@ const modlar: { kod: TestMod; ad: string; ikon: string }[] = [
               <i :class="['fas mr-1.5', yapiyor === 'okc' ? 'fa-spinner fa-spin' : 'fa-receipt']" />Fiş Kes
             </button>
           </div>
+
+          <button
+            @click="sentetikPaytr"
+            :disabled="!!yapiyor"
+            class="w-full mt-2 px-3 py-2.5 rounded-xl border-2 border-blue-500/40 bg-blue-500/10 text-blue-700 hover:bg-blue-500/15 transition text-xs font-semibold disabled:opacity-50"
+          >
+            <i :class="['fas mr-1.5', yapiyor === 'paytr' ? 'fa-spinner fa-spin' : 'fa-mobile-screen-button']" />
+            Sanal POS Test (başlat → sonuç)
+          </button>
+          <p class="text-[10px] text-pearl-50 mt-2 leading-relaxed">
+            PayTR sanal pos akışını uçtan uca dener. Gerçek müşteri akışı: QR menü → "Hesabım / Öde".
+          </p>
         </div>
 
         <!-- GİB RAPORLARI -->

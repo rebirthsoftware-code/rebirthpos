@@ -41,11 +41,18 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      // Üretimde (Vercel) backend aynı projede /api altında → göreli yol, CORS yok.
-      // Yerelde ayrı NestJS portu. NUXT_PUBLIC_API_BASE her şeyi geçersiz kılar.
+      // Öncelik: NUXT_PUBLIC_API_BASE env her şeyi geçersiz kılar.
+      // - Masaüstü (Electron) build: göreli/localhost olamaz (file:// + yanında backend yok)
+      //   → varsayılan CANLI API. Kendi sunucunuza build için NUXT_PUBLIC_API_BASE verin.
+      // - Vercel (web): aynı projede /api → göreli yol, CORS yok.
+      // - Yerel geliştirme: ayrı NestJS portu.
       apiBase:
         process.env.NUXT_PUBLIC_API_BASE ||
-        (process.env.VERCEL ? '/api' : 'http://localhost:3001/api'),
+        (desktopBuild
+          ? 'https://rebirthpos.vercel.app/api'
+          : process.env.VERCEL
+            ? '/api'
+            : 'http://localhost:3001/api'),
     },
   },
 

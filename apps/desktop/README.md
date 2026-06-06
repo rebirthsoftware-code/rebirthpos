@@ -20,16 +20,44 @@ Electron geliştirme modunda `http://localhost:3000` adresini yükler — Nuxt't
 
 ## Üretim Derlemesi
 
+Masaüstü uygulaması **statik frontend + Electron** olarak paketlenir ve varsayılan
+olarak **canlı backend'e** (`https://rebirthpos.vercel.app/api`) bağlanır — yani
+kurulan uygulama, yanında ayrıca backend çalıştırmaya gerek kalmadan açılır açılmaz
+çalışır (Neon veritabanına buluttan erişir). Bu varsayılan
+`apps/frontend/nuxt.config.ts` içindeki masaüstü dalında tanımlıdır.
+
+### A) GitHub Actions ile (önerilen — yerel kuruluma gerek yok)
+
+Depoda **`.github/workflows/desktop-build.yml`** hazır. Windows runner'da `.exe`
+üretir ve "Artifacts" altında indirilebilir yapar:
+
+1. GitHub → **Actions** → **Masaüstü Uygulaması (Electron)** → **Run workflow**.
+2. (Opsiyonel) Farklı bir sunucuya bağlamak için `api_base` gir (örn. `https://sirket.com/api`); boş bırakırsan canlı varsayılan kullanılır.
+3. Bittiğinde **rebirth-pos-windows** artifact'ını indir → `Rebirth POS Setup x.y.z.exe`.
+
+`v*` etiketi push'lanınca da otomatik çalışır (örn. `git tag v0.1.0 && git push --tags`).
+
+### B) Yerel makinede
+
 ```bash
-# Windows için installer + portable EXE üret
+# Windows'ta: installer + portable EXE
 npm run build:desktop:win
+
+# macOS / Linux'ta (host OS'a göre dmg / AppImage)
+npm run build:desktop
 
 # Çıktı: apps/desktop/dist/
 #   Rebirth POS Setup 0.1.0.exe   (NSIS installer)
 #   Rebirth POS 0.1.0.exe          (portable)
+
+# Kendi sunucunuza bağlamak için (yerel build):
+#   NUXT_PUBLIC_API_BASE=https://sirket.com/api npm run build:desktop:win
 ```
 
 İlk derlemede electron-builder gerekli runtime dosyalarını (~150MB) indirir. Sonraki derlemeler daha hızlıdır.
+
+> Not: `.exe` yalnızca Windows üzerinde (veya Windows runner'da) üretilebilir; Linux/mac'te
+> wine olmadan Windows hedefi alınamaz. Bu yüzden A şıkkı (Actions) en pratik yoldur.
 
 ## Yapı
 

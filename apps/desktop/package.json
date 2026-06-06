@@ -28,7 +28,7 @@
     "asar": true,
     "directories": {
       "output": "dist",
-      "buildResources": "assets"
+      "buildResources": "build"
     },
     "files": [
       "main.js",
@@ -54,8 +54,7 @@
             "x64"
           ]
         }
-      ],
-      "icon": "assets/icon.ico"
+      ]
     },
     "nsis": {
       "oneClick": false,
@@ -70,16 +69,14 @@
       "target": [
         "dmg",
         "zip"
-      ],
-      "icon": "assets/icon.icns"
+      ]
     },
     "linux": {
       "target": [
         "AppImage",
         "deb"
       ],
-      "category": "Office",
-      "icon": "assets/icon.png"
+      "category": "Office"
     }
   }
 }

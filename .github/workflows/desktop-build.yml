@@ -1,0 +1,65 @@
+name: Masaüstü Uygulaması (Electron)
+
+# Tüm projeyi kurulabilir masaüstü uygulamasına çevirir.
+# - Elle tetikle (Actions sekmesi → Run workflow) ya da v* etiketi push'la.
+# - Çıktı: Windows kurulum (.exe) + portable, "Artifacts" altında indirilebilir.
+# Masaüstü build, frontend'i statik üretir ve canlı backend'e bağlanır
+# (apps/frontend/nuxt.config.ts → desktop varsayılanı). Farklı bir sunucu için
+# aşağıdaki "api_base" girdisini doldur.
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base:
+        description: 'Backend API adresi (boş bırakılırsa canlı varsayılan kullanılır)'
+        required: false
+        default: ''
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  windows:
+    name: Windows (.exe)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Bağımlılıkları kur
+        run: npm ci
+
+      - name: Masaüstü uygulamasını derle (Windows)
+        env:
+          # Boşsa nuxt.config'teki masaüstü varsayılanı (canlı API) devreye girer.
+          NUXT_PUBLIC_API_BASE: ${{ github.event.inputs.api_base }}
+        run: npm run build:desktop:win
+
+      - name: Kurulum dosyalarını yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: rebirth-pos-windows
+          path: |
+            apps/desktop/dist/*.exe
+            apps/desktop/dist/*.blockmap
+          if-no-files-found: error
+          retention-days: 30
+
+  # macOS/Linux paketleri istenirse aşağıdaki blok açılabilir.
+  # macos:
+  #   name: macOS (.dmg)
+  #   runs-on: macos-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-node@v4
+  #       with: { node-version: '20', cache: 'npm' }
+  #     - run: npm ci
+  #     - run: npm run build:desktop  # electron-builder host OS'a göre derler
+  #     - uses: actions/upload-artifact@v4
+  #       with:
+  #         name: rebirth-pos-macos
+  #         path: apps/desktop/dist/*.dmg

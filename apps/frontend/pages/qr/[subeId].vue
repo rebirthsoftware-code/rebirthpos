@@ -102,15 +102,29 @@ onMounted(() => {
   if (sonuc) router.replace({ query: { ...route.query, odeme: undefined } });
 });
 
+// Gerçek kategori filtresi: '' (vitrin) ve '_tum' (tüm menü) seçili değil demektir.
+function gercekKategoriMi(id: string): boolean {
+  return !!id && id !== '_tum';
+}
 const filtreli = computed(() => {
   if (!menu.value) return [];
   let liste = menu.value.urunler;
-  if (aktifKategori.value) liste = liste.filter((u) => u.kategoriId === aktifKategori.value);
+  if (gercekKategoriMi(aktifKategori.value)) liste = liste.filter((u) => u.kategoriId === aktifKategori.value);
   if (arama.value.trim()) {
     const q = arama.value.toLocaleLowerCase('tr');
     liste = liste.filter((u) => u.ad.toLocaleLowerCase('tr').includes(q));
   }
   return liste;
+});
+
+// Ürün listesi başlığı (kategori adı / arama / tüm menü)
+const aktifBaslik = computed<{ ad: string; ikon?: string | null; renk?: string | null }>(() => {
+  if (arama.value.trim()) return { ad: 'Arama Sonuçları', ikon: 'fa-magnifying-glass', renk: null };
+  if (gercekKategoriMi(aktifKategori.value)) {
+    const k = kategoriMap.value.get(aktifKategori.value);
+    return { ad: k?.ad || '', ikon: k?.ikon, renk: k?.renk };
+  }
+  return { ad: 'Tüm Menü', ikon: 'fa-layer-group', renk: null };
 });
 
 const sayilar = computed(() => {
@@ -140,32 +154,6 @@ function urunIkon(u: Urun): string {
 function sepetAdetUrun(id: string): number {
   return sepet.value.find((s) => s.urun.id === id)?.adet || 0;
 }
-
-// À la carte menü düzeni: ürünleri kategori bölümlerine ayır.
-// - Kategori seçiliyse → tek bölüm
-// - Arama varsa → tek "sonuç" bölümü
-// - "Tümü" → her kategori kendi bölümü (sıralı) + kategorisizler "Diğer"
-interface Bolum { id: string; ad: string; ikon?: string | null; renk?: string | null; urunler: Urun[] }
-const bolumler = computed<Bolum[]>(() => {
-  if (!menu.value) return [];
-  if (arama.value.trim()) {
-    return filtreli.value.length
-      ? [{ id: '_arama', ad: 'Arama Sonuçları', ikon: 'fa-magnifying-glass', renk: null, urunler: filtreli.value }]
-      : [];
-  }
-  if (aktifKategori.value) {
-    const k = kategoriMap.value.get(aktifKategori.value);
-    return [{ id: aktifKategori.value, ad: k?.ad || '', ikon: k?.ikon, renk: k?.renk, urunler: filtreli.value }];
-  }
-  const out: Bolum[] = [];
-  for (const k of menu.value.kategoriler) {
-    const us = menu.value.urunler.filter((u) => u.kategoriId === k.id);
-    if (us.length) out.push({ id: k.id, ad: k.ad, ikon: k.ikon, renk: k.renk, urunler: us });
-  }
-  const katsiz = menu.value.urunler.filter((u) => !u.kategoriId);
-  if (katsiz.length) out.push({ id: '_katsiz', ad: 'Diğer', ikon: 'fa-utensils', renk: null, urunler: katsiz });
-  return out;
-});
 
 function sepeteEkle(u: Urun) {
   const v = sepet.value.find((s) => s.urun.id === u.id);
@@ -479,84 +467,124 @@ async function odemeyiBaslat() {
           <input v-model="arama" class="input-base pl-11 !rounded-2xl !bg-white" placeholder="Lezzet ara..." />
         </div>
 
-        <!-- Kategoriler -->
-        <div class="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-thin">
-          <button
-            @click="aktifKategori = ''"
-            :class="['px-4 py-2.5 rounded-2xl text-sm whitespace-nowrap transition-all border font-medium flex items-center gap-2 shrink-0', aktifKategori === '' ? 'bg-gold-gradient text-white border-transparent shadow-gold-edge' : 'bg-white border-pearl-10 text-pearl-70']"
-          >
-            <i class="fas fa-star text-xs" />Tümü
-            <span class="text-xs opacity-80">{{ sayilar[''] }}</span>
-          </button>
-          <button
-            v-for="k in menu.kategoriler"
-            :key="k.id"
-            @click="aktifKategori = k.id"
-            :class="['px-4 py-2.5 rounded-2xl text-sm whitespace-nowrap transition-all border font-medium flex items-center gap-2 shrink-0', aktifKategori === k.id ? 'bg-gold-gradient text-white border-transparent shadow-gold-edge' : 'bg-white border-pearl-10 text-pearl-70']"
-          >
-            <i v-if="k.ikon" :class="['fas', k.ikon, 'text-xs']" :style="aktifKategori === k.id ? {} : { color: k.renk || undefined }" />
-            {{ k.ad }}
-            <span class="text-xs opacity-80">{{ sayilar[k.id] || 0 }}</span>
-          </button>
-        </div>
-
-        <!-- Boş durum -->
-        <div v-if="!bolumler.length" class="surface-elevated p-10 text-center text-pearl-50">
-          <i class="fas fa-utensils text-4xl text-gold-primary/25 mb-3 block" />
-          Ürün bulunamadı
-        </div>
-
-        <!-- À la carte menü: kategori bölümleri + zarif satırlar -->
-        <section v-for="b in bolumler" :key="b.id" class="space-y-2.5">
-          <div class="flex items-center gap-2.5">
-            <span class="w-9 h-9 rounded-xl flex items-center justify-center text-sm shrink-0" :style="{ background: `${b.renk || '#c89a2a'}1f`, color: b.renk || '#c89a2a' }">
-              <i :class="['fas', b.ikon || 'fa-utensils']" />
-            </span>
-            <h2 class="text-base font-bold text-pearl tracking-tight">{{ b.ad }}</h2>
-            <span class="text-xs text-pearl-40">{{ b.urunler.length }}</span>
+        <!-- ═══ KATEGORİ VİTRİNİ — önce kategoriler görünür ═══ -->
+        <template v-if="aktifKategori === '' && !arama.trim()">
+          <div class="flex items-center gap-2">
+            <h2 class="text-[11px] uppercase tracking-[0.2em] text-gold-dark/70 font-semibold">Kategoriler</h2>
             <span class="h-px flex-1 bg-gold-line" />
           </div>
-
-          <div class="surface-elevated overflow-hidden shadow-glass divide-y divide-pearl-10">
-            <article
-              v-for="u in b.urunler"
-              :key="u.id"
-              class="flex items-center gap-3.5 p-3 hover:bg-gold-haze transition-colors"
+          <div class="grid grid-cols-2 gap-3">
+            <button
+              v-for="k in menu.kategoriler"
+              :key="k.id"
+              @click="aktifKategori = k.id"
+              class="group relative surface-elevated overflow-hidden p-4 text-left hover:shadow-elevated hover:-translate-y-1 hover:border-gold-primary/30 transition-all duration-300"
             >
-              <!-- görsel / placeholder -->
-              <div class="relative w-[68px] h-[68px] rounded-xl overflow-hidden shrink-0">
-                <img v-if="u.resimUrl" :src="u.resimUrl" class="w-full h-full object-cover" />
-                <div
-                  v-else
-                  class="w-full h-full relative flex items-center justify-center"
-                  :style="{ background: `linear-gradient(140deg, ${urunRenk(u)}26, ${urunRenk(u)}0a)` }"
-                >
-                  <i :class="['fas', urunIkon(u)]" class="absolute -right-2 -bottom-2 text-4xl opacity-10" :style="{ color: urunRenk(u) }" />
-                  <i :class="['fas', urunIkon(u)]" class="text-xl" :style="{ color: urunRenk(u) }" />
+              <div class="absolute -right-5 -bottom-5 w-20 h-20 rounded-full opacity-[0.10] group-hover:opacity-20 transition" :style="{ background: k.renk || '#c89a2a' }" />
+              <div class="relative">
+                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl mb-3" :style="{ background: `${k.renk || '#c89a2a'}1f`, color: k.renk || '#c89a2a' }">
+                  <i :class="['fas', k.ikon || 'fa-utensils']" />
                 </div>
-                <span v-if="sepetAdetUrun(u.id)" class="absolute -top-1.5 -right-1.5 min-w-[20px] h-5 px-1 rounded-full bg-gold-gradient text-white text-[11px] font-bold flex items-center justify-center shadow-gold-edge ring-2 ring-white">
+                <h3 class="font-bold text-pearl leading-tight">{{ k.ad }}</h3>
+                <p class="text-xs text-pearl-50 mt-0.5">{{ sayilar[k.id] || 0 }} ürün</p>
+              </div>
+              <i class="fas fa-arrow-right absolute top-4 right-4 text-pearl-30 group-hover:text-gold-primary group-hover:translate-x-0.5 transition" />
+            </button>
+          </div>
+          <button @click="aktifKategori = '_tum'" class="w-full text-center text-sm text-gold-dark font-semibold py-2.5 rounded-2xl bg-gold-soft border border-gold-primary/20 hover:bg-gold-primary/15 transition">
+            <i class="fas fa-layer-group mr-1.5" />Tüm Menüyü Gör
+          </button>
+        </template>
+
+        <!-- ═══ ÜRÜNLER — kategori seçili / tüm menü / arama ═══ -->
+        <template v-else>
+          <!-- Üst bar: geri + aktif başlık -->
+          <div class="flex items-center gap-2">
+            <button @click="aktifKategori = ''; arama = ''" class="flex items-center gap-1.5 text-sm font-semibold text-gold-dark hover:text-gold-primary shrink-0">
+              <i class="fas fa-chevron-left" />Kategoriler
+            </button>
+            <span class="h-px flex-1 bg-gold-line" />
+            <span class="text-sm font-bold text-pearl flex items-center gap-1.5">
+              <i v-if="aktifBaslik.ikon" :class="['fas', aktifBaslik.ikon]" :style="{ color: aktifBaslik.renk || undefined }" />
+              {{ aktifBaslik.ad }}
+            </span>
+          </div>
+
+          <!-- Hızlı kategori geçişi -->
+          <div class="flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-thin">
+            <button
+              @click="aktifKategori = '_tum'"
+              :class="['px-4 py-2 rounded-2xl text-sm whitespace-nowrap transition-all border font-medium flex items-center gap-2 shrink-0', aktifKategori === '_tum' && !arama.trim() ? 'bg-gold-gradient text-white border-transparent shadow-gold-edge' : 'bg-white border-pearl-10 text-pearl-70']"
+            >
+              <i class="fas fa-layer-group text-xs" />Tümü
+            </button>
+            <button
+              v-for="k in menu.kategoriler"
+              :key="k.id"
+              @click="aktifKategori = k.id; arama = ''"
+              :class="['px-4 py-2 rounded-2xl text-sm whitespace-nowrap transition-all border font-medium flex items-center gap-2 shrink-0', aktifKategori === k.id && !arama.trim() ? 'bg-gold-gradient text-white border-transparent shadow-gold-edge' : 'bg-white border-pearl-10 text-pearl-70']"
+            >
+              <i v-if="k.ikon" :class="['fas', k.ikon, 'text-xs']" :style="aktifKategori === k.id && !arama.trim() ? {} : { color: k.renk || undefined }" />
+              {{ k.ad }}
+              <span class="text-xs opacity-80">{{ sayilar[k.id] || 0 }}</span>
+            </button>
+          </div>
+
+          <!-- Boş durum -->
+          <div v-if="!filtreli.length" class="surface-elevated p-10 text-center text-pearl-50">
+            <i class="fas fa-utensils text-4xl text-gold-primary/25 mb-3 block" />
+            Ürün bulunamadı
+          </div>
+
+          <div v-else class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <article
+              v-for="u in filtreli"
+              :key="u.id"
+              class="group relative bg-white border border-pearl-10 rounded-2xl overflow-hidden shadow-glass hover:shadow-elevated hover:border-gold-primary/30 transition-all duration-300 hover:-translate-y-1 flex flex-col"
+            >
+            <!-- Görsel / placeholder -->
+            <div class="relative aspect-square overflow-hidden">
+              <img
+                v-if="u.resimUrl"
+                :src="u.resimUrl"
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+              />
+              <div
+                v-else
+                class="w-full h-full relative overflow-hidden"
+                :style="{ background: `linear-gradient(140deg, ${urunRenk(u)}26 0%, ${urunRenk(u)}0d 55%, rgba(255,255,255,0) 100%)` }"
+              >
+                <i :class="['fas', urunIkon(u)]" class="absolute -right-3 -bottom-3 text-7xl opacity-[0.08]" :style="{ color: urunRenk(u) }" />
+                <div class="absolute inset-0 flex items-center justify-center">
+                  <i :class="['fas', urunIkon(u)]" class="text-3xl opacity-50" :style="{ color: urunRenk(u) }" />
+                </div>
+              </div>
+              <!-- adet rozeti (sepetteyse) -->
+              <Transition enter-active-class="transition duration-200" enter-from-class="scale-0 opacity-0">
+                <span v-if="sepetAdetUrun(u.id)" class="absolute top-2 right-2 min-w-[24px] h-6 px-1.5 rounded-full bg-gold-gradient text-white text-xs font-bold flex items-center justify-center shadow-gold-edge">
                   {{ sepetAdetUrun(u.id) }}
                 </span>
-              </div>
+              </Transition>
+            </div>
 
-              <!-- bilgi -->
-              <div class="flex-1 min-w-0">
-                <h3 class="font-semibold text-[15px] leading-tight text-pearl">{{ u.ad }}</h3>
-                <p v-if="u.aciklama" class="text-xs text-pearl-50 mt-0.5 line-clamp-2 leading-snug">{{ u.aciklama }}</p>
-                <div class="text-base font-bold gold-text mt-1 leading-none">{{ paraFormat(u.fiyat) }}</div>
+            <!-- İçerik -->
+            <div class="p-3 flex flex-col flex-1">
+              <h3 class="font-semibold text-sm leading-tight text-pearl line-clamp-1">{{ u.ad }}</h3>
+              <p v-if="u.aciklama" class="text-[11px] text-pearl-50 mt-0.5 line-clamp-2 leading-snug">{{ u.aciklama }}</p>
+              <div class="mt-auto flex items-end justify-between pt-2.5">
+                <span class="text-lg font-bold gold-text leading-none">{{ paraFormat(u.fiyat) }}</span>
+                <button
+                  @click="sepeteEkle(u)"
+                  class="w-9 h-9 rounded-xl bg-gold-gradient text-white shadow-gold-edge hover:scale-110 active:scale-90 transition flex items-center justify-center"
+                  aria-label="Sepete ekle"
+                >
+                  <i class="fas fa-plus text-sm" />
+                </button>
               </div>
-
-              <!-- ekle -->
-              <button
-                @click="sepeteEkle(u)"
-                class="w-10 h-10 rounded-xl bg-gold-gradient text-white shadow-gold-edge hover:scale-110 active:scale-90 transition flex items-center justify-center shrink-0"
-                aria-label="Sepete ekle"
-              >
-                <i class="fas fa-plus" />
-              </button>
-            </article>
-          </div>
-        </section>
+            </div>
+          </article>
+        </div>
+        </template>
       </div>
 
       <!-- ═══════════════ HESAP / ÖDEME GÖRÜNÜMÜ ═══════════════ -->

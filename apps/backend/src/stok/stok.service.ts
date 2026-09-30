@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { StokHareketDto } from './dto/stok.dto';
+import { StokHareketDto, TopluStokHareketDto } from './dto/stok.dto';
 import { CurrentUserData } from '../common/decorators/current-user.decorator';
 import { erisilebilirSubeler, subeYetkiKontrolu } from '../common/tenant';
 import { DenetimService } from '../denetim/denetim.service';
@@ -27,6 +27,8 @@ export class StokService {
         id: true,
         subeId: true,
         ad: true,
+        barkod: true,
+        fiyat: true,
         stok: true,
         stokBirim: true,
         stokUyariEsigi: true,
@@ -105,6 +107,64 @@ export class StokService {
       });
       return hareket;
     });
+  }
+
+  /**
+   * Barkodla toplu stok hareketi — hepsi tek transaction; biri hatalıysa hiçbiri işlenmez.
+   * GIRIS / DUZELTME'de stok takibi kapalı ürünün takibi otomatik açılır
+   * (barkodla mal kabul yapılan ürün stok takibine alınmış sayılır).
+   */
+  async topluHareket(dto: TopluStokHareketDto, user: CurrentUserData) {
+    subeYetkiKontrolu(user, dto.subeId);
+    return this.prisma.$transaction(async (tx) => {
+      const sonuc: Array<{ urunId: string; ad: string; oncesi: number; sonrasi: number }> = [];
+      for (const k of dto.kalemler) {
+        const urun = await tx.urun.findUnique({ where: { id: k.urunId } });
+        if (!urun || urun.subeId !== dto.subeId) throw new NotFoundException('Ürün bulunamadı');
+        if (dto.tip !== 'DUZELTME' && k.miktar <= 0) {
+          throw new BadRequestException(`"${urun.ad}" için miktar 0'dan büyük olmalı`);
+        }
+        const takibiAc = !urun.stokTakibi && (dto.tip === 'GIRIS' || dto.tip === 'DUZELTME');
+        if (!urun.stokTakibi && !takibiAc) {
+          throw new BadRequestException(`"${urun.ad}" için stok takibi açık değil`);
+        }
+        const oncesi = new Prisma.Decimal(urun.stok);
+        let sonrasi: Prisma.Decimal;
+        if (dto.tip === 'DUZELTME') sonrasi = new Prisma.Decimal(k.miktar);
+        else if (dto.tip === 'GIRIS' || dto.tip === 'IADE') sonrasi = oncesi.add(k.miktar);
+        else {
+          sonrasi = oncesi.sub(k.miktar);
+          if (sonrasi.lt(0)) sonrasi = new Prisma.Decimal(0);
+        }
+        await tx.urun.update({
+          where: { id: urun.id },
+          data: { stok: sonrasi, ...(takibiAc ? { stokTakibi: true } : {}) },
+        });
+        await tx.stokHareketi.create({
+          data: {
+            subeId: urun.subeId,
+            urunId: urun.id,
+            tip: dto.tip,
+            miktar: new Prisma.Decimal(k.miktar),
+            oncesi,
+            sonrasi,
+            aciklama: dto.aciklama,
+            kullaniciId: user.kullaniciId,
+          },
+        });
+        await this.denetim.kaydet(tx, user, {
+          islem: DenetimOlay.STOK_DUZELTME,
+          entityTipi: 'Urun',
+          entityId: urun.id,
+          subeId: urun.subeId,
+          ozet: `Stok ${dto.tip} (barkod): ${urun.ad} (${Number(oncesi)} → ${Number(sonrasi)} ${urun.stokBirim})`,
+          onceki: { stok: Number(oncesi) },
+          sonraki: { stok: Number(sonrasi), tip: dto.tip, miktar: k.miktar, aciklama: dto.aciklama },
+        });
+        sonuc.push({ urunId: urun.id, ad: urun.ad, oncesi: Number(oncesi), sonrasi: Number(sonrasi) });
+      }
+      return { islenen: sonuc.length, urunler: sonuc };
+    }, { timeout: 30_000, maxWait: 10_000 });
   }
 
   /**

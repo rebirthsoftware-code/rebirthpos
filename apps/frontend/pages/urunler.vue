@@ -18,6 +18,9 @@ interface Urun {
   resimUrl?: string | null;
   barkod?: string | null;
   stokTakibi: boolean;
+  stok?: string | number;
+  stokBirim?: string;
+  stokUyariEsigi?: string | number;
   aktif: boolean;
   qrMenudeGoster: boolean;
   kategori?: Kategori | null;
@@ -42,6 +45,8 @@ const form = reactive({
   resimUrl: '',
   barkod: '',
   stokTakibi: false,
+  stokBirim: 'adet',
+  stokUyariEsigi: 0,
   aktif: true,
   qrMenudeGoster: true,
 });
@@ -94,6 +99,8 @@ function yeniAc() {
     resimUrl: '',
     barkod: '',
     stokTakibi: false,
+    stokBirim: 'adet',
+    stokUyariEsigi: 0,
     aktif: true,
     qrMenudeGoster: true,
   });
@@ -111,6 +118,8 @@ function duzenleAc(u: Urun) {
     resimUrl: u.resimUrl || '',
     barkod: u.barkod || '',
     stokTakibi: u.stokTakibi,
+    stokBirim: u.stokBirim || 'adet',
+    stokUyariEsigi: Number(u.stokUyariEsigi || 0),
     aktif: u.aktif,
     qrMenudeGoster: u.qrMenudeGoster,
   });
@@ -130,8 +139,11 @@ async function kaydet() {
       kdvOrani: Number(form.kdvOrani),
       kategoriId: form.kategoriId || undefined,
       resimUrl: form.resimUrl.trim() || undefined,
-      barkod: form.barkod.trim() || undefined,
+      // Düzenlemede boş barkod = barkodu kaldır
+      barkod: form.barkod.trim() || (duzenlenen.value ? null : undefined),
       stokTakibi: form.stokTakibi,
+      stokBirim: form.stokBirim,
+      stokUyariEsigi: Number(form.stokUyariEsigi) || 0,
       aktif: form.aktif,
       qrMenudeGoster: form.qrMenudeGoster,
     };
@@ -153,6 +165,21 @@ async function kaydet() {
 }
 
 const { onay } = useOnay();
+const etiket = useEtiket();
+
+async function barkodUret() {
+  if (!sube.aktifSubeId) return;
+  try {
+    const r = await apiFetch<{ barkod: string }>(`/urunler/yeni-barkod?subeId=${sube.aktifSubeId}`);
+    form.barkod = r.barkod;
+  } catch (e: any) {
+    useToastStore().hata(e?.data?.message || 'Barkod üretilemedi');
+  }
+}
+
+function etiketeEkle(u: Urun) {
+  if (etiket.ekle(u)) useToastStore().basari(`${u.ad} etiket kuyruğuna eklendi`);
+}
 
 async function sil(u: Urun) {
   if (!(await onay({
@@ -256,6 +283,9 @@ const sayilar = computed(() => {
           <div class="flex items-start justify-between gap-2 mb-1">
             <h3 class="font-semibold leading-snug">{{ u.ad }}</h3>
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition shrink-0">
+              <button v-if="u.barkod" @click="etiketeEkle(u)" class="text-pearl-60 hover:text-gold-primary p-1 rounded hover:bg-pearl-5" title="Etiket kuyruğuna ekle">
+                <i class="fas fa-barcode text-sm" />
+              </button>
               <button @click="duzenleAc(u)" class="text-pearl-60 hover:text-gold-primary p-1 rounded hover:bg-pearl-5">
                 <i class="fas fa-pen-to-square text-sm" />
               </button>
@@ -269,6 +299,7 @@ const sayilar = computed(() => {
             <span v-if="u.kategori.renk" class="w-1.5 h-1.5 rounded-full" :style="{ background: u.kategori.renk }" />
             {{ u.kategori.ad }}
           </div>
+          <div v-if="u.barkod" class="text-[11px] text-pearl-50 font-mono mb-1">{{ u.barkod }}</div>
 
           <div class="flex items-end justify-between mt-3 pt-3 border-t border-glass-border">
             <div class="text-xl font-bold gold-text">₺{{ Number(u.fiyat).toFixed(2) }}</div>
@@ -276,8 +307,12 @@ const sayilar = computed(() => {
               <span v-if="u.qrMenudeGoster" class="text-[10px] uppercase bg-blue-500/15 text-blue-300 px-2 py-0.5 rounded-full" title="QR menüde görünüyor">
                 QR
               </span>
-              <span v-if="u.stokTakibi" class="text-[10px] uppercase bg-purple-500/15 text-purple-300 px-2 py-0.5 rounded-full">
-                Stok
+              <span
+                v-if="u.stokTakibi"
+                :class="['text-[10px] px-2 py-0.5 rounded-full tabular', Number(u.stok) <= Number(u.stokUyariEsigi || 0) ? 'bg-red-500/15 text-red-300' : 'bg-purple-500/15 text-purple-300']"
+                title="Eldeki stok"
+              >
+                {{ Number(u.stok || 0) }} {{ u.stokBirim }}
               </span>
               <span v-if="!u.aktif" class="text-[10px] uppercase bg-red-500/15 text-red-300 px-2 py-0.5 rounded-full">
                 Pasif
@@ -317,7 +352,12 @@ const sayilar = computed(() => {
 
         <div>
           <label class="block text-sm text-pearl-60 mb-2">Barkod</label>
-          <input v-model="form.barkod" class="input-base" placeholder="Opsiyonel" />
+          <div class="flex gap-2">
+            <input v-model="form.barkod" class="input-base font-mono" placeholder="Okutun veya üretin" @keydown.enter.prevent />
+            <button type="button" @click="barkodUret" class="glass-card px-3 text-xs hover:bg-glass-hover transition shrink-0" title="Mağaza içi barkod üret">
+              <i class="fas fa-wand-magic-sparkles mr-1" />Üret
+            </button>
+          </div>
         </div>
 
         <div>
@@ -349,6 +389,20 @@ const sayilar = computed(() => {
           <input v-model="form.stokTakibi" type="checkbox" class="accent-gold-primary w-4 h-4" />
           <span class="text-sm">Stok Takip</span>
         </label>
+      </div>
+
+      <div v-if="form.stokTakibi" class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm text-pearl-60 mb-2">Stok Birimi</label>
+          <select v-model="form.stokBirim" class="input-base">
+            <option v-for="b in ['adet', 'kg', 'gr', 'lt', 'porsiyon', 'paket', 'koli']" :key="b">{{ b }}</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-sm text-pearl-60 mb-2">Kritik Stok Uyarısı</label>
+          <input v-model.number="form.stokUyariEsigi" type="number" min="0" step="0.01" class="input-base" />
+        </div>
+        <p class="col-span-2 text-xs text-pearl-50 -mt-2">Stok miktarı Stok ekranından (Barkodla İşlem / Hareket) girilir; satışta otomatik düşer.</p>
       </div>
 
       <div class="flex gap-3 pt-2">

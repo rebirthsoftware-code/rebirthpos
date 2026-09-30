@@ -42,6 +42,7 @@ const gruplar: MenuGrup[] = [
       { ad: 'Kategoriler', yol: '/kategoriler', ikon: 'fa-layer-group' },
       { ad: 'Ürünler', yol: '/urunler', ikon: 'fa-utensils' },
       { ad: 'Stok', yol: '/stok', ikon: 'fa-boxes-stacked' },
+      { ad: 'Barkod Etiketi', yol: '/etiket', ikon: 'fa-barcode' },
     ],
   },
   {

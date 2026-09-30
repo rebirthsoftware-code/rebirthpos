@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { paraFormat } from '~/utils/format';
+import { carpanliKod, okutulanUrunuBul } from '~/utils/barkod';
 
 definePageMeta({ middleware: ['auth'] });
 
@@ -10,6 +11,10 @@ interface Urun {
   kategoriId?: string | null;
   resimUrl?: string | null;
   aktif: boolean;
+  barkod?: string | null;
+  stokTakibi?: boolean;
+  stok?: string | number;
+  stokBirim?: string;
 }
 
 interface Kategori { id: string; ad: string; renk?: string | null; ikon?: string | null }
@@ -47,15 +52,39 @@ const filtreli = computed(() => {
   if (aktifKategori.value) l = l.filter((u) => u.kategoriId === aktifKategori.value);
   if (arama.value.trim()) {
     const q = arama.value.toLocaleLowerCase('tr');
-    l = l.filter((u) => u.ad.toLocaleLowerCase('tr').includes(q));
+    l = l.filter((u) => u.ad.toLocaleLowerCase('tr').includes(q) || !!u.barkod?.includes(q));
   }
   return l;
 });
 
-function sepeteEkle(u: Urun) {
+function sepeteEkle(u: Urun, adet = 1) {
   const v = sepet.value.find((s) => s.urun.id === u.id);
-  if (v) v.adet++;
-  else sepet.value.push({ urun: u, adet: 1 });
+  if (v) v.adet += adet;
+  else sepet.value.push({ urun: u, adet });
+  const sepetteki = v ? v.adet : adet;
+  if (u.stokTakibi && sepetteki > Number(u.stok)) {
+    useToastStore().uyari(`${u.ad}: stokta ${Number(u.stok)} ${u.stokBirim || ''} var`);
+  }
+}
+
+// Barkod okuyucu klavye gibi yazar + Enter basar. "3*barkod" = 3 adet.
+const aramaInput = ref<HTMLInputElement | null>(null);
+function aramaEnter() {
+  const { miktar, kod } = carpanliKod(arama.value);
+  if (!kod) return;
+  const u = okutulanUrunuBul(urunler.value, kod);
+  if (!u) {
+    useToastStore().hata(`"${kod}" barkodlu ürün bulunamadı`);
+    arama.value = '';
+    return;
+  }
+  sepeteEkle(u, miktar && miktar >= 1 ? Math.round(miktar) : 1);
+  arama.value = '';
+  aramaInput.value?.focus();
+}
+
+function stokEtiketi(u: Urun) {
+  return `${Number(u.stok)} ${u.stokBirim || ''}`.trim();
 }
 
 function sepetAzalt(i: number) {
@@ -283,6 +312,7 @@ async function satisTamamla() {
     };
     sepet.value = [];
     odemeModalAcik.value = false;
+    yukle(); // satışla düşen stokları tazele
     musteri.tesekkurGoster(6);
     musteri.sepetTemizle();
     musteri.odemeDurumuTemizle();
@@ -314,7 +344,7 @@ function fisYazdir() {
       <template v-else>
         <div class="relative">
           <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-pearl-50" />
-          <input v-model="arama" class="input-base pl-11" placeholder="Ürün ara veya barkod oku..." autofocus />
+          <input ref="aramaInput" v-model="arama" @keydown.enter.prevent="aramaEnter" class="input-base pl-11" placeholder="Ürün ara veya barkod okut (3*barkod = 3 adet)..." autocomplete="off" autofocus />
         </div>
 
         <div class="-mx-4 sm:-mx-0 px-4 sm:px-0 overflow-x-auto sm:overflow-visible">
@@ -347,7 +377,14 @@ function fisYazdir() {
             class="glass-card p-3 text-left hover:scale-[1.03] hover:border-gold-primary/40 transition active:scale-100"
           >
             <div class="font-semibold leading-snug mb-2 line-clamp-2 min-h-[2.5rem] text-sm sm:text-base">{{ u.ad }}</div>
-            <div class="text-base font-bold gold-text tabular">{{ paraFormat(u.fiyat) }}</div>
+            <div class="flex items-end justify-between gap-1">
+              <div class="text-base font-bold gold-text tabular">{{ paraFormat(u.fiyat) }}</div>
+              <span
+                v-if="u.stokTakibi"
+                :class="['text-[10px] px-1.5 py-0.5 rounded-full tabular', Number(u.stok) > 0 ? 'bg-emerald-500/15 text-emerald-300' : 'bg-red-500/15 text-red-300']"
+                title="Eldeki stok"
+              >{{ stokEtiketi(u) }}</span>
+            </div>
           </button>
         </div>
       </template>
@@ -378,7 +415,12 @@ function fisYazdir() {
               <span class="w-8 text-center text-sm font-bold tabular">{{ s.adet }}</span>
               <button @click="s.adet++" class="w-7 h-7 hover:bg-pearl-10 text-gold-primary">+</button>
             </div>
-            <div class="flex-1 text-sm truncate">{{ s.urun.ad }}</div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm truncate">{{ s.urun.ad }}</div>
+              <div v-if="s.urun.stokTakibi" :class="['text-[10px] tabular', s.adet > Number(s.urun.stok) ? 'text-red-300' : 'text-pearl-50']">
+                Elde {{ stokEtiketi(s.urun) }}
+              </div>
+            </div>
             <div class="text-sm font-medium tabular">{{ paraFormat(Number(s.urun.fiyat) * s.adet) }}</div>
           </div>
         </div>

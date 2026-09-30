@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { randomInt } from 'node:crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { UrunCreateDto, UrunUpdateDto } from './dto/urun.dto';
 import { CurrentUserData } from '../common/decorators/current-user.decorator';
@@ -37,19 +38,60 @@ export class UrunlerService {
     return urun;
   }
 
+  /** Barkod okutulduğunda: şubedeki ürünü barkodla bulur. */
+  async barkodlaBul(barkod: string, subeId: string, user: CurrentUserData) {
+    subeYetkiKontrolu(user, subeId);
+    const urun = await this.prisma.urun.findFirst({
+      where: { subeId, barkod: barkod.trim() },
+      include: { kategori: { select: { id: true, ad: true, renk: true } } },
+    });
+    if (!urun) throw new NotFoundException('Bu barkodla kayıtlı ürün yok');
+    return urun;
+  }
+
+  /**
+   * Barkodu olmayan ürünler için şubede kullanılmayan mağaza içi EAN-13 üretir.
+   * "2" ile başlayan aralık GS1 tarafından iç kullanıma ayrılmıştır; üretici barkodlarıyla çakışmaz.
+   */
+  async yeniBarkod(subeId: string, user: CurrentUserData) {
+    subeYetkiKontrolu(user, subeId);
+    for (let deneme = 0; deneme < 20; deneme++) {
+      const ilk12 = '20' + String(randomInt(0, 1e10)).padStart(10, '0');
+      const barkod = ilk12 + ean13KontrolHanesi(ilk12);
+      const varMi = await this.prisma.urun.findFirst({ where: { subeId, barkod }, select: { id: true } });
+      if (!varMi) return { barkod };
+    }
+    throw new ConflictException('Barkod üretilemedi, tekrar deneyin');
+  }
+
+  private async barkodCakismaKontrolu(subeId: string, barkod: string | null | undefined, haricId?: string) {
+    if (!barkod) return;
+    const cakisan = await this.prisma.urun.findFirst({
+      where: { subeId, barkod, ...(haricId ? { id: { not: haricId } } : {}) },
+      select: { ad: true },
+    });
+    if (cakisan) throw new ConflictException(`Bu barkod zaten "${cakisan.ad}" ürününde kayıtlı`);
+  }
+
   async olustur(dto: UrunCreateDto, user: CurrentUserData) {
     subeYetkiKontrolu(user, dto.subeId);
+    dto.barkod = dto.barkod?.trim() || null;
+    await this.barkodCakismaKontrolu(dto.subeId, dto.barkod);
     if (dto.kategoriId) {
       const k = await this.prisma.kategori.findUnique({ where: { id: dto.kategoriId } });
       if (!k || k.subeId !== dto.subeId) {
         throw new NotFoundException('Kategori bulunamadı veya farklı şubeye ait');
       }
     }
-    return this.prisma.urun.create({ data: dto, include: { kategori: true } });
+    return this.prisma.urun.create({ data: dto as any, include: { kategori: true } });
   }
 
   async guncelle(id: string, dto: UrunUpdateDto, user: CurrentUserData) {
     const mevcut = await this.getir(id, user);
+    if (dto.barkod !== undefined) {
+      dto.barkod = dto.barkod?.trim() || null;
+      await this.barkodCakismaKontrolu(mevcut.subeId, dto.barkod, id);
+    }
     if (dto.kategoriId) {
       const k = await this.prisma.kategori.findUnique({ where: { id: dto.kategoriId } });
       if (!k || k.subeId !== mevcut.subeId) {
@@ -112,4 +154,10 @@ export class UrunlerService {
       return { silindi: true };
     });
   }
+}
+
+function ean13KontrolHanesi(ilk12: string): string {
+  let t = 0;
+  for (let i = 0; i < 12; i++) t += Number(ilk12[i]) * (i % 2 ? 3 : 1);
+  return String((10 - (t % 10)) % 10);
 }

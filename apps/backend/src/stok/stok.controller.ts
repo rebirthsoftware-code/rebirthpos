@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { StokService } from './stok.service';
-import { StokHareketDto } from './dto/stok.dto';
+import { StokHareketDto, TopluStokHareketDto } from './dto/stok.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -32,5 +32,12 @@ export class StokController {
   @Post('hareket')
   hareket(@Body() dto: StokHareketDto, @CurrentUser() user: CurrentUserData) {
     return this.stok.hareketEkle(dto, user);
+  }
+
+  // Barkod okutarak toplu hareket (stok girişi / çıkış / fire / sayım): yönetici.
+  @Roles(...YONETICI_ROLLER)
+  @Post('toplu-hareket')
+  topluHareket(@Body() dto: TopluStokHareketDto, @CurrentUser() user: CurrentUserData) {
+    return this.stok.topluHareket(dto, user);
   }
 }

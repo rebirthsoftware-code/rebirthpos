@@ -46,6 +46,14 @@
 - ✅ Stok: durum + hareket geçmişi, otomatik satış düşümü
 - ✅ Raporlar: günsonu, KPI'lar, saatlik grafik, en çok satanlar, personel performans
 
+### Barkodlu Stok & Satış (entegrasyon)
+- ✅ Ürünler: barkod alanında **Üret** (şube içinde benzersiz, `2` ile başlayan mağaza içi EAN-13), aynı şubede tekrar eden barkod engellenir, stok birimi + kritik stok eşiği formda
+- ✅ `GET /urunler/barkod/:barkod?subeId=`, `GET /urunler/yeni-barkod?subeId=`
+- ✅ Stok → **Barkodla İşlem** sekmesi: okut → liste → Mal Kabul / Çıkış / Fire / Sayım tek transaction'da (`POST /stok/toplu-hareket`). Tanımsız barkodda hızlı ürün tanımlama; giriş/sayımda stok takibi otomatik açılır; "Sonra etiket bas"
+- ✅ **Barkod Etiketi** sayfası (`/etiket`): rulo etiket yazıcısı veya A4 ızgara, ad + barkod (EAN-13/Code128, `utils/barkod.ts`) + fiyat
+- ✅ Hızlı Sipariş: barkod okutunca sepete ekler (`3*barkod` = 3 adet), ürün kartında ve sepette eldeki stok, stok yetersizse uyarı; satış sonrası stok tazelenir
+- ℹ️ Bağımsız sürüm + canlı demo: `barkod-stok/` klasörü
+
 ### Faz 5 — Hızlı Sipariş + Toast
 - ✅ /hizli sayfası (tezgah satışı, para üstü)
 - ✅ Toast bildirim sistemi (alert yerine)

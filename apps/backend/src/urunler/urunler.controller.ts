@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -29,6 +30,23 @@ export class UrunlerController {
     @Query('kategoriId') kategoriId?: string,
   ) {
     return this.urunler.liste(user, subeId, kategoriId);
+  }
+
+  // Barkod okuyucu: ':id' rotasından ÖNCE tanımlanmalı
+  @Get('barkod/:barkod')
+  barkodlaBul(
+    @Param('barkod') barkod: string,
+    @Query('subeId') subeId: string,
+    @CurrentUser() user: CurrentUserData,
+  ) {
+    if (!subeId) throw new BadRequestException('subeId gerekli');
+    return this.urunler.barkodlaBul(barkod, subeId, user);
+  }
+
+  @Get('yeni-barkod')
+  yeniBarkod(@Query('subeId') subeId: string, @CurrentUser() user: CurrentUserData) {
+    if (!subeId) throw new BadRequestException('subeId gerekli');
+    return this.urunler.yeniBarkod(subeId, user);
   }
 
   @Get(':id')

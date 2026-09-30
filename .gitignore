@@ -25,3 +25,6 @@ release
 
 # Vercel
 .vercel
+
+# Barkod stok sistemi veritabanı
+barkod-stok/veri/

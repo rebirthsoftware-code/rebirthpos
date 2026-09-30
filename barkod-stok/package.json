@@ -1,0 +1,11 @@
+{
+  "name": "barkod-stok",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Barkodlu stok giriş/çıkış + satış (kasa) sistemi — ek paket gerektirmez",
+  "main": "server.js",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "start": "node --no-warnings server.js"
+  }
+}

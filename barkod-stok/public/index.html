@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Barkodlu Stok & Satış</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="uygulama">
+    <nav class="kenar">
+      <div class="logo">▮▯▮▮▯▮ <span>Barkod Stok</span></div>
+      <a href="#/satis" data-sayfa="satis"><i>🛒</i> Satış <kbd>F1</kbd></a>
+      <a href="#/stok" data-sayfa="stok"><i>📥</i> Stok Giriş / Çıkış <kbd>F2</kbd></a>
+      <a href="#/urunler" data-sayfa="urunler"><i>📦</i> Ürünler & Stok <kbd>F3</kbd></a>
+      <a href="#/etiket" data-sayfa="etiket"><i>🏷️</i> Barkod Etiketi Bas <kbd>F4</kbd></a>
+      <a href="#/satislar" data-sayfa="satislar"><i>🧾</i> Satışlar</a>
+      <a href="#/hareketler" data-sayfa="hareketler"><i>↕️</i> Stok Hareketleri</a>
+      <a href="#/ozet" data-sayfa="ozet"><i>📊</i> Özet</a>
+      <a href="#/ayarlar" data-sayfa="ayarlar"><i>⚙️</i> Ayarlar</a>
+      <div class="saat" id="saat"></div>
+    </nav>
+    <main id="icerik"></main>
+  </div>
+
+  <div id="modal" class="modal gizli"><div class="modal-kutu" id="modal-kutu"></div></div>
+  <div id="toastlar"></div>
+  <div id="yazdir-alani"></div>
+
+  <script src="/barkod.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

@@ -49,6 +49,13 @@ export class UrunlerController {
     return this.urunler.yeniBarkod(subeId, user);
   }
 
+  @Roles(...YONETICI_ROLLER)
+  @Post('barkodsuzlara-uret')
+  barkodsuzlaraUret(@Body('subeId') subeId: string, @CurrentUser() user: CurrentUserData) {
+    if (!subeId) throw new BadRequestException('subeId gerekli');
+    return this.urunler.barkodsuzlaraUret(subeId, user);
+  }
+
   @Get(':id')
   getir(@Param('id') id: string, @CurrentUser() user: CurrentUserData) {
     return this.urunler.getir(id, user);

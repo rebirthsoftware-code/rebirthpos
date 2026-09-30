@@ -48,7 +48,8 @@
 
 ### Barkodlu Stok & Satış (entegrasyon)
 - ✅ Ürünler: barkod alanında **Üret** (şube içinde benzersiz, `2` ile başlayan mağaza içi EAN-13), aynı şubede tekrar eden barkod engellenir, stok birimi + kritik stok eşiği formda
-- ✅ `GET /urunler/barkod/:barkod?subeId=`, `GET /urunler/yeni-barkod?subeId=`
+- ✅ `GET /urunler/barkod/:barkod?subeId=`, `GET /urunler/yeni-barkod?subeId=`, `POST /urunler/barkodsuzlara-uret`
+- ✅ Ürünlere barkod ekleme: kartta **Barkod ekle** (okut ya da üret, etikete ekle), başlıkta **Barkodsuz ürünler** ekranı (sırayla okut → Enter ile kaydet, kalanlara tek tuşla üret)
 - ✅ Stok → **Barkodla İşlem** sekmesi: okut → liste → Mal Kabul / Çıkış / Fire / Sayım tek transaction'da (`POST /stok/toplu-hareket`). Tanımsız barkodda hızlı ürün tanımlama; giriş/sayımda stok takibi otomatik açılır; "Sonra etiket bas"
 - ✅ **Barkod Etiketi** sayfası (`/etiket`): rulo etiket yazıcısı veya A4 ızgara, ad + barkod (EAN-13/Code128, `utils/barkod.ts`) + fiyat
 - ✅ Hızlı Sipariş: barkod okutunca sepete ekler (`3*barkod` = 3 adet), ürün kartında ve sepette eldeki stok, stok yetersizse uyarı; satış sonrası stok tazelenir

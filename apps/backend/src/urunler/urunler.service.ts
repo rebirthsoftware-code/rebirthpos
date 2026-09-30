@@ -64,6 +64,20 @@ export class UrunlerService {
     throw new ConflictException('Barkod üretilemedi, tekrar deneyin');
   }
 
+  /** Şubedeki barkodu olmayan tüm ürünlere mağaza içi barkod verir. */
+  async barkodsuzlaraUret(subeId: string, user: CurrentUserData) {
+    subeYetkiKontrolu(user, subeId);
+    const barkodsuzlar = await this.prisma.urun.findMany({
+      where: { subeId, OR: [{ barkod: null }, { barkod: '' }] },
+      select: { id: true },
+    });
+    for (const u of barkodsuzlar) {
+      const { barkod } = await this.yeniBarkod(subeId, user);
+      await this.prisma.urun.update({ where: { id: u.id }, data: { barkod } });
+    }
+    return { guncellenen: barkodsuzlar.length };
+  }
+
   private async barkodCakismaKontrolu(subeId: string, barkod: string | null | undefined, haricId?: string) {
     if (!barkod) return;
     const cakisan = await this.prisma.urun.findFirst({

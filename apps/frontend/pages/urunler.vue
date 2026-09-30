@@ -177,6 +177,97 @@ async function barkodUret() {
   }
 }
 
+// ─── Barkod atama ───
+// Tek ürün: kartta "Barkod ekle" → okut ya da üret
+const barkodModal = ref(false);
+const barkodUrun = ref<Urun | null>(null);
+const barkodDeger = ref('');
+const barkodEtiketeEkle = ref(true);
+const barkodKaydediliyor = ref(false);
+
+function barkodEkleAc(u: Urun) {
+  barkodUrun.value = u;
+  barkodDeger.value = '';
+  barkodModal.value = true;
+}
+
+async function barkodDegerUret() {
+  if (!sube.aktifSubeId) return;
+  try {
+    barkodDeger.value = (await apiFetch<{ barkod: string }>(`/urunler/yeni-barkod?subeId=${sube.aktifSubeId}`)).barkod;
+  } catch (e: any) {
+    useToastStore().hata(e?.data?.message || 'Barkod üretilemedi');
+  }
+}
+
+async function barkodAta(u: Urun, barkod: string) {
+  const guncel = await apiFetch<Urun>(`/urunler/${u.id}`, { method: 'PATCH', body: { barkod: barkod.trim() } });
+  const i = urunler.value.findIndex((x) => x.id === u.id);
+  if (i >= 0) urunler.value[i] = { ...urunler.value[i], barkod: guncel.barkod };
+  return guncel;
+}
+
+async function barkodKaydet() {
+  if (!barkodUrun.value || !barkodDeger.value.trim()) return;
+  barkodKaydediliyor.value = true;
+  try {
+    const guncel = await barkodAta(barkodUrun.value, barkodDeger.value);
+    if (barkodEtiketeEkle.value) etiket.ekle({ ...barkodUrun.value, barkod: guncel.barkod });
+    useToastStore().basari(`${barkodUrun.value.ad}: barkod eklendi`);
+    barkodModal.value = false;
+  } catch (e: any) {
+    useToastStore().hata(e?.data?.message || 'Barkod kaydedilemedi');
+  } finally {
+    barkodKaydediliyor.value = false;
+  }
+}
+
+// Toplu: barkodu olmayan ürünlere sırayla okut (Enter → kaydet, sonraki satıra geç)
+const barkodsuzlar = computed(() => urunler.value.filter((u) => !u.barkod));
+const topluBarkodModal = ref(false);
+const topluBarkodlar = reactive<Record<string, string>>({});
+const topluIslemde = ref(false);
+
+function topluBarkodAc() {
+  for (const k of Object.keys(topluBarkodlar)) delete topluBarkodlar[k];
+  topluBarkodModal.value = true;
+  nextTick(() => (document.querySelector('[data-barkod-input]') as HTMLInputElement | null)?.focus());
+}
+
+async function topluSatirKaydet(u: Urun, ev?: KeyboardEvent) {
+  const deger = topluBarkodlar[u.id]?.trim();
+  if (!deger) return;
+  const sonraki = (ev?.target as HTMLElement | undefined)?.closest('tr')?.nextElementSibling?.querySelector('input') as HTMLInputElement | null;
+  try {
+    await barkodAta(u, deger);
+    delete topluBarkodlar[u.id];
+    useToastStore().basari(`${u.ad}: barkod eklendi`);
+    nextTick(() => (sonraki?.isConnected ? sonraki : document.querySelector('[data-barkod-input]') as HTMLInputElement | null)?.focus());
+  } catch (e: any) {
+    useToastStore().hata(e?.data?.message || 'Barkod kaydedilemedi');
+  }
+}
+
+async function hepsineBarkodUret() {
+  if (!sube.aktifSubeId || !barkodsuzlar.value.length) return;
+  if (!(await onay({
+    baslik: 'Hepsine barkod üret',
+    mesaj: `Barkodu olmayan ${barkodsuzlar.value.length} ürüne mağaza içi barkod verilecek. Ürünün kendi (üretici) barkodu varsa önce onu okutmanız daha iyi olur.`,
+    onayMetni: 'Üret',
+  }))) return;
+  topluIslemde.value = true;
+  try {
+    const r = await apiFetch<{ guncellenen: number }>('/urunler/barkodsuzlara-uret', { method: 'POST', body: { subeId: sube.aktifSubeId } });
+    useToastStore().basari(`${r.guncellenen} ürüne barkod verildi`);
+    topluBarkodModal.value = false;
+    await listele();
+  } catch (e: any) {
+    useToastStore().hata(e?.data?.message || 'Barkodlar üretilemedi');
+  } finally {
+    topluIslemde.value = false;
+  }
+}
+
 function etiketeEkle(u: Urun) {
   if (etiket.ekle(u)) useToastStore().basari(`${u.ad} etiket kuyruğuna eklendi`);
 }
@@ -208,6 +299,14 @@ const sayilar = computed(() => {
 <template>
   <PageHeader baslik="Ürünler" aciklama="Menü ürünlerini yönet" ikon="fa-utensils">
     <template #actions>
+      <button
+        v-if="barkodsuzlar.length"
+        @click="topluBarkodAc"
+        class="btn-ghost !w-auto !py-2.5 !px-4"
+        title="Barkodu olmayan ürünlere barkod ver"
+      >
+        <i class="fas fa-barcode mr-2" /> Barkodsuz ürünler ({{ barkodsuzlar.length }})
+      </button>
       <button @click="yeniAc" :disabled="!sube.aktifSubeId" class="btn-gold !w-auto !py-2.5 !px-5">
         <i class="fas fa-plus mr-2" /> Yeni Ürün
       </button>
@@ -300,6 +399,13 @@ const sayilar = computed(() => {
             {{ u.kategori.ad }}
           </div>
           <div v-if="u.barkod" class="text-[11px] text-pearl-50 font-mono mb-1">{{ u.barkod }}</div>
+          <button
+            v-else
+            @click="barkodEkleAc(u)"
+            class="text-[11px] text-gold-primary hover:underline mb-1"
+          >
+            <i class="fas fa-barcode mr-1" />Barkod ekle
+          </button>
 
           <div class="flex items-end justify-between mt-3 pt-3 border-t border-glass-border">
             <div class="text-xl font-bold gold-text">₺{{ Number(u.fiyat).toFixed(2) }}</div>
@@ -416,5 +522,84 @@ const sayilar = computed(() => {
         </button>
       </div>
     </form>
+  </AppModal>
+
+  <!-- Tek ürüne barkod ekle -->
+  <AppModal :acik="barkodModal" :baslik="`Barkod ekle: ${barkodUrun?.ad || ''}`" genislik="max-w-md" @kapat="barkodModal = false">
+    <form @submit.prevent="barkodKaydet" class="space-y-4">
+      <div>
+        <label class="block text-sm text-pearl-60 mb-2">Barkod</label>
+        <div class="flex gap-2">
+          <input
+            v-model="barkodDeger"
+            class="input-base font-mono text-lg"
+            placeholder="Ürünün barkodunu okutun"
+            autocomplete="off"
+            autofocus
+          />
+          <button type="button" @click="barkodDegerUret" class="glass-card px-3 text-xs hover:bg-glass-hover transition shrink-0">
+            <i class="fas fa-wand-magic-sparkles mr-1" />Üret
+          </button>
+        </div>
+        <p class="text-xs text-pearl-50 mt-2">
+          Ürünün üzerinde barkod varsa okutun. Yoksa <b>Üret</b> ile mağaza içi barkod verin ve etiketini basın.
+        </p>
+      </div>
+      <label class="flex items-center gap-2 text-sm cursor-pointer">
+        <input v-model="barkodEtiketeEkle" type="checkbox" class="accent-gold-primary w-4 h-4" /> Etiket kuyruğuna da ekle
+      </label>
+      <div class="flex gap-3 pt-2">
+        <button type="button" @click="barkodModal = false" class="flex-1 glass-card py-3 text-sm hover:bg-glass-hover transition">İptal</button>
+        <button type="submit" :disabled="barkodKaydediliyor || !barkodDeger.trim()" class="btn-gold flex-1">
+          <i v-if="barkodKaydediliyor" class="fas fa-spinner fa-spin mr-2" />
+          <i v-else class="fas fa-check mr-2" />Kaydet
+        </button>
+      </div>
+    </form>
+  </AppModal>
+
+  <!-- Barkodsuz ürünlere toplu barkod -->
+  <AppModal :acik="topluBarkodModal" baslik="Barkodsuz Ürünler" genislik="max-w-2xl" @kapat="topluBarkodModal = false">
+    <p class="text-sm text-pearl-60 mb-4">
+      Sırayla her ürünün barkodunu okutun; okuyucu Enter'a basınca kaydedilir ve sonraki satıra geçilir.
+      Barkodu olmayan ürünler için alttaki butonla toplu barkod üretebilirsiniz.
+    </p>
+    <div v-if="!barkodsuzlar.length" class="text-center py-8 text-pearl-60">
+      <i class="fas fa-circle-check text-3xl text-emerald-400 mb-2 block" />Tüm ürünlerin barkodu var
+    </div>
+    <div v-else class="max-h-[55vh] overflow-auto -mx-2 px-2">
+      <table class="w-full text-sm">
+        <tbody>
+          <tr v-for="u in barkodsuzlar" :key="u.id" class="border-b border-glass-border last:border-0">
+            <td class="py-2 pr-3">
+              <div class="font-medium">{{ u.ad }}</div>
+              <div v-if="u.kategori" class="text-xs text-pearl-50">{{ u.kategori.ad }}</div>
+            </td>
+            <td class="py-2 w-64">
+              <input
+                v-model="topluBarkodlar[u.id]"
+                data-barkod-input
+                @keydown.enter.prevent="topluSatirKaydet(u, $event)"
+                class="input-base font-mono !py-2"
+                placeholder="Barkodu okutun"
+                autocomplete="off"
+              />
+            </td>
+            <td class="py-2 pl-2 w-10 text-right">
+              <button @click="topluSatirKaydet(u)" :disabled="!topluBarkodlar[u.id]?.trim()" class="text-pearl-60 hover:text-gold-primary p-1 disabled:opacity-30" title="Kaydet">
+                <i class="fas fa-check" />
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="flex gap-3 pt-4">
+      <button @click="topluBarkodModal = false" class="flex-1 glass-card py-3 text-sm hover:bg-glass-hover transition">Kapat</button>
+      <button @click="hepsineBarkodUret" :disabled="topluIslemde || !barkodsuzlar.length" class="btn-gold flex-1">
+        <i v-if="topluIslemde" class="fas fa-spinner fa-spin mr-2" />
+        <i v-else class="fas fa-wand-magic-sparkles mr-2" />Kalan {{ barkodsuzlar.length }} ürüne barkod üret
+      </button>
+    </div>
   </AppModal>
 </template>

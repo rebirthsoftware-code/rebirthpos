@@ -57,3 +57,7 @@ barkod-stok/
     ├── barkod.js    EAN-13 / Code128 SVG üretici
     └── style.css
 ```
+
+## Canlı demo (sunucusuz)
+
+`node barkod-stok/demo/olustur.js` komutu `demo/barkod-stok-demo.html` adında tek dosyalık bir demo üretir. Bu dosya sunucu olmadan tarayıcıda açılır, veriler tarayıcıda saklanır ve örnek ürünlerle gelir.

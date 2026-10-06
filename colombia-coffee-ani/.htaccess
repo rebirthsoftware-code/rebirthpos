@@ -1,0 +1,15 @@
+Options -Indexes
+DirectoryIndex index.php
+
+# Ayar ve veri dosyalarına dışarıdan erişim yok
+<FilesMatch "^(config|lib)\.php$|\.(sqlite|ini|md)$">
+  Require all denied
+</FilesMatch>
+
+# mod_php kullanan sunucular için yükleme sınırları (.user.ini çalışmıyorsa)
+<IfModule mod_php.c>
+  php_value upload_max_filesize 256M
+  php_value post_max_size 512M
+  php_value max_execution_time 300
+  php_value memory_limit 512M
+</IfModule>

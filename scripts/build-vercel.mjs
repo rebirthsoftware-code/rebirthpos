@@ -59,7 +59,7 @@ try {
   // Vercel fonksiyon yapılandırması
   writeFileSync(
     `${fn}/.vc-config.json`,
-    JSON.stringify({ runtime: 'nodejs20.x', handler: 'index.js', launcherType: 'Nodejs', shouldAddHelpers: true }, null, 2),
+    JSON.stringify({ runtime: 'nodejs22.x', handler: 'index.js', launcherType: 'Nodejs', shouldAddHelpers: true }, null, 2),
   );
 
   // Fonksiyonun kendi node_modules'ı (sadece runtime bağımlılıkları)
